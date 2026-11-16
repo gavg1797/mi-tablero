@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mi Tablero de Estudio</title>
+<meta name="theme-color" content="#4f46e5">
+<meta name="description" content="Tablero de tareas de estudio con checklist, recordatorios y Google Calendar. Funciona sin internet.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mi Tablero">
+<style>
+:root{
+  --bg:#f4f5fb; --surface:#ffffff; --col:#e9ebf5; --text:#1b1d2e; --muted:#6b6f85; --line:#d9dcea;
+  --accent:#4f46e5; --accent-2:#eef0ff; --ok:#10b981; --warn:#f59e0b; --bad:#ef4444;
+  --shadow:0 1px 2px rgba(20,20,50,.08),0 2px 8px rgba(20,20,50,.06);
+  --radius:14px;
+}
+@media (prefers-color-scheme:dark){
+  :root{ --bg:#0f1020; --surface:#1b1d33; --col:#15172a; --text:#eceefb; --muted:#9a9fc0; --line:#2b2e4a; --accent:#818cf8; --accent-2:#25284a; --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 12px rgba(0,0,0,.25); }
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+.app{display:flex;flex-direction:column;height:100%;padding-top:env(safe-area-inset-top)}
+header{display:flex;align-items:center;gap:8px;padding:10px 14px;padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right));background:var(--surface);border-bottom:1px solid var(--line)}
+header h1{font-size:17px;margin:0;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header>*{flex-shrink:0}
+header>h1{flex-shrink:1}
+@media (max-width:420px){.hide-sm{display:none}}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 12px;display:inline-flex;align-items:center;gap:6px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.danger{color:var(--bad)}
+.btn:active{transform:scale(.97)}
+.icon-btn{border:none;background:transparent;padding:6px;border-radius:8px;line-height:0}
+.icon-btn:hover{background:var(--accent-2)}
+.toolbar{display:flex;gap:8px;padding:8px 14px;align-items:center;flex-wrap:wrap;padding-left:max(14px,env(safe-area-inset-left))}
+.toolbar input,.toolbar select{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:7px 10px;min-width:0}
+.toolbar input{flex:1;min-width:120px}
+.tabs{display:flex;background:var(--col);border-radius:10px;padding:3px}
+.tabs button{border:none;background:transparent;padding:6px 12px;border-radius:8px;color:var(--muted)}
+.tabs button.on{background:var(--surface);color:var(--text);box-shadow:var(--shadow)}
+.banner{margin:0 14px 6px;padding:8px 12px;border-radius:10px;background:var(--accent-2);font-size:14px;display:none}
+.banner.show{display:block}
+main{flex:1;min-height:0;position:relative}
+.board{height:100%;display:flex;gap:12px;overflow-x:auto;overflow-y:hidden;padding:6px 14px calc(14px + env(safe-area-inset-bottom));scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
+.column{flex:0 0 300px;max-width:86vw;background:var(--col);border-radius:var(--radius);display:flex;flex-direction:column;max-height:100%;scroll-snap-align:start}
+@media (max-width:640px){.column{flex-basis:86vw}}
+.col-head{display:flex;align-items:center;gap:6px;padding:10px 10px 6px 12px}
+.col-head h2{font-size:14px;margin:0;flex:1;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.count{font-size:12px;background:var(--surface);border-radius:20px;padding:1px 8px;color:var(--muted)}
+.col-list{flex:1;overflow-y:auto;padding:4px 8px 8px;min-height:60px;display:flex;flex-direction:column;gap:8px}
+.add-in-col{margin:0 8px 8px;border:1px dashed var(--line);background:transparent;border-radius:10px;padding:8px;color:var(--muted);text-align:left}
+.card{background:var(--surface);border-radius:12px;padding:10px 10px 10px 8px;box-shadow:var(--shadow);display:flex;gap:8px;align-items:flex-start;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:pan-x pan-y;border-left:4px solid transparent}
+.card.done .title{text-decoration:line-through;color:var(--muted)}
+.card .body{flex:1;min-width:0}
+.card .title{font-weight:600;word-wrap:break-word}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;font-size:12px;color:var(--muted)}
+.chip{border-radius:20px;padding:1px 8px;background:var(--accent-2);color:var(--text);white-space:nowrap}
+.chip.today{background:#fef3c7;color:#92400e}
+.chip.late{background:#fee2e2;color:#991b1b}
+.chip.okc{background:#d1fae5;color:#065f46}
+.check{flex:0 0 26px;height:26px;border-radius:50%;border:2px solid var(--line);background:transparent;display:grid;place-items:center;padding:0;margin-top:1px}
+.check svg{opacity:0}
+.card.done .check{background:var(--ok);border-color:var(--ok)}
+.card.done .check svg{opacity:1}
+.progress{height:4px;border-radius:4px;background:var(--line);margin-top:6px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--ok)}
+.placeholder{border:2px dashed var(--accent);border-radius:12px;background:var(--accent-2);flex:0 0 auto}
+.drag-ghost{position:fixed;pointer-events:none;z-index:50;transform:rotate(2deg);opacity:.95;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.dragging-src{opacity:.25}
+body.dragging{overflow:hidden}
+.agenda{height:100%;overflow-y:auto;padding:6px 14px calc(20px + env(safe-area-inset-bottom))}
+.agenda h3{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:16px 4px 8px}
+.agenda .card{margin-bottom:8px}
+.empty{color:var(--muted);text-align:center;padding:40px 20px}
+/* Modales */
+.overlay{position:fixed;inset:0;background:rgba(10,10,30,.45);display:none;align-items:flex-end;justify-content:center;z-index:100}
+.overlay.show{display:flex}
+@media (min-width:700px){.overlay{align-items:center}}
+.sheet{background:var(--surface);width:100%;max-width:560px;max-height:92vh;overflow-y:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
+@media (min-width:700px){.sheet{border-radius:18px}}
+.sheet h2{margin:0 0 12px;font-size:18px}
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.field label{font-size:13px;color:var(--muted)}
+.field input,.field select,.field textarea{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:9px 10px;width:100%}
+.field textarea{min-height:70px;resize:vertical}
+.row{display:flex;gap:10px}
+.row>*{flex:1;min-width:0}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.actions .spacer{flex:1}
+.cl-item{display:flex;align-items:center;gap:8px;padding:4px 0}
+.cl-item input[type=checkbox]{width:20px;height:20px;accent-color:var(--ok)}
+.cl-item input[type=text]{flex:1;border:none;background:transparent;padding:4px;border-bottom:1px solid transparent}
+.cl-item input[type=text]:focus{outline:none;border-bottom-color:var(--line)}
+.cl-item.done input[type=text]{text-decoration:line-through;color:var(--muted)}
+.menu-list button{display:flex;width:100%;text-align:left;border:none;background:transparent;padding:12px 6px;border-bottom:1px solid var(--line);gap:10px;align-items:center}
+.menu-list small{display:block;color:var(--muted)}
+.hint{font-size:13px;color:var(--muted);margin:4px 0 10px}
+pre.example{background:var(--bg);border-radius:10px;padding:10px;font-size:13px;white-space:pre-wrap;margin:6px 0 10px}
+table.preview{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0}
+table.preview td,table.preview th{border-bottom:1px solid var(--line);padding:6px 4px;text-align:left}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#1b1d2e;color:#fff;padding:10px 16px;border-radius:12px;z-index:200;max-width:90vw;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+.fab{position:fixed;right:max(18px,env(safe-area-inset-right));bottom:calc(18px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:50%;border:none;background:var(--accent);color:#fff;box-shadow:0 6px 18px rgba(79,70,229,.45);display:grid;place-items:center;z-index:40}
+.sync-btn{position:relative}
+.sync-btn i{position:absolute;right:3px;bottom:4px;width:9px;height:9px;border-radius:50%;background:var(--muted);border:2px solid var(--surface)}
+.sync-btn.ok i{background:var(--ok)} .sync-btn.needauth i,.sync-btn.error i{background:var(--warn)} .sync-btn.offline i{background:#9ca3af}
+.sync-btn.syncing svg{animation:pulse 1s infinite alternate} @keyframes pulse{to{opacity:.35}}
+.offline-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);display:inline-block}
+.offline-dot.off{background:var(--warn)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#4f46e5"/><rect x="5" y="5" width="4" height="10" rx="1.2" fill="#fff"/><rect x="10" y="5" width="4" height="7" rx="1.2" fill="#fff"/><rect x="15" y="5" width="4" height="5" rx="1.2" fill="#fff"/></svg>
+    <h1>Mi Tablero de Estudio</h1>
+    <button class="icon-btn sync-btn" id="btnSync" title="Sincronizar con Google" aria-label="Sincronizar con Google"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 18a4.5 4.5 0 01-.6-8.96A6 6 0 0118 8.5a4 4 0 01-.5 9.5H7z"/></svg><i id="syncDot"></i></button>
+    <button class="btn ghost" id="btnImport" title="Importar cronograma">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg><span class="hide-sm">Cronograma</span></button>
+    <button class="icon-btn" id="btnMenu" aria-label="Menú"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>
+  </header>
+  <div class="toolbar">
+    <div class="tabs" role="tablist">
+      <button id="tabBoard" class="on">Tablero</button>
+      <button id="tabAgenda">Agenda</button>
+    </div>
+    <input id="fSearch" type="search" placeholder="Buscar tarea…">
+    <select id="fSubject"><option value="">Todas las materias</option></select>
+  </div>
+  <div class="banner" id="banner"></div>
+  <main>
+    <div class="board" id="board"></div>
+    <div class="agenda" id="agenda" hidden></div>
+  </main>
+</div>
+<button class="fab" id="fab" aria-label="Nueva tarea"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg></button>
+
+<!-- Editor de tarea -->
+<div class="overlay" id="ovCard"><div class="sheet">
+  <h2 id="cardTitle">Nueva tarea</h2>
+  <div class="field"><label for="cTitle">Tarea</label><input id="cTitle" placeholder="Ej: Estudiar capítulo 3"></div>
+  <div class="row">
+    <div class="field"><label for="cSubject">Materia / curso</label><input id="cSubject" list="subjectsList" placeholder="Ej: Cálculo"></div>
+    <div class="field"><label for="cCol">Columna</label><select id="cCol"></select></div>
+  </div>
+  <datalist id="subjectsList"></datalist>
+  <div class="row">
+    <div class="field"><label for="cDate">Fecha</label><input id="cDate" type="date"></div>
+    <div class="field"><label for="cTime">Hora (opcional)</label><input id="cTime" type="time"></div>
+  </div>
+  <div class="field"><label for="cRemind">Recordatorio</label>
+    <select id="cRemind">
+      <option value="">Sin recordatorio</option>
+      <option value="0">A la hora</option>
+      <option value="15">15 minutos antes</option>
+      <option value="30">30 minutos antes</option>
+      <option value="60">1 hora antes</option>
+      <option value="120">2 horas antes</option>
+      <option value="1440">1 día antes</option>
+      <option value="2880">2 días antes</option>
+      <option value="10080">1 semana antes</option>
+    </select>
+  </div>
+  <div class="field"><label for="cDesc">Notas</label><textarea id="cDesc" placeholder="Detalles, páginas, enlaces…"></textarea></div>
+  <div class="field"><label>Checklist</label>
+    <div id="cChecklist"></div>
+    <div class="row" style="margin-top:6px"><input id="cNewItem" placeholder="Agregar paso y presionar Enter" style="border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:8px 10px"><button class="btn" id="cAddItem" style="flex:0 0 auto">Añadir</button></div>
+  </div>
+  <div class="actions">
+    <button class="btn" id="cGcal" title="Abre Google Calendar con el evento listo para guardar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg> Google Calendar</button>
+    <button class="btn" id="cIcs" title="Descargar archivo de calendario con alarma">.ics</button>
+  </div>
+  <div class="actions">
+    <button class="btn danger" id="cDelete">Eliminar</button>
+    <span class="spacer"></span>
+    <button class="btn" id="cCancel">Cancelar</button>
+    <button class="btn primary" id="cSave">Guardar</button>
+  </div>
+</div></div>
+
+<!-- Importar cronograma -->
+<div class="overlay" id="ovImport"><div class="sheet">
+  <h2>Importar cronograma</h2>
+  <p class="hint">Pega tu cronograma, una tarea por línea. Formato: <b>fecha, hora (opcional) | tarea | materia</b>. Puedes separar con <b>|</b>, <b>;</b>, tabulador o <b>" - "</b> (copiar desde Excel funciona).</p>
+  <pre class="example">20/11 | Examen parcial | Cálculo
+22/11/2026 14:00 | Entregar ensayo | Español
+2026-11-25 - Leer capítulo 4 - Historia</pre>
+  <div class="field"><textarea id="impText" style="min-height:140px" placeholder="Pega aquí…"></textarea></div>
+  <div class="row">
+    <div class="field"><label for="impRemind">Recordatorio para todas</label>
+      <select id="impRemind"><option value="">Sin recordatorio</option><option value="60">1 hora antes</option><option value="1440" selected>1 día antes</option><option value="2880">2 días antes</option></select></div>
+    <div class="field"><label for="impCol">Enviar a</label><select id="impCol"><option value="auto">Automático por fecha</option></select></div>
+  </div>
+  <div id="impPreview"></div>
+  <div class="actions"><span class="spacer"></span><button class="btn" id="impCancel">Cancelar</button><button class="btn" id="impCheck">Vista previa</button><button class="btn primary" id="impDo" disabled>Importar</button></div>
+</div></div>
+
+<!-- Menú -->
+<div class="overlay" id="ovMenu"><div class="sheet">
+  <h2>Opciones</h2>
+  <div class="menu-list">
+    <button id="mSync">☁️<span>Sincronizar con Google<small id="mSyncState">Tus tareas en todos tus dispositivos</small></span></button>
+    <button id="mNotif">🔔<span>Activar notificaciones<small id="mNotifState">Avisos en este dispositivo</small></span></button>
+    <button id="mInstall">📲<span>Instalar en el celular<small>Agregar a la pantalla de inicio</small></span></button>
+    <button id="mIcsAll">📅<span>Exportar tareas pendientes a calendario (.ics)<small>Importa todo a Google Calendar de una vez, con alarmas</small></span></button>
+    <button id="mColumns">🗂️<span>Editar columnas<small>Renombrar, agregar o quitar</small></span></button>
+    <button id="mAutoWeek">🗓️<span>Mover automáticamente a “Esta semana”<small id="mAutoWeekState"></small></span></button>
+    <button id="mBackup">💾<span>Descargar respaldo<small>Para guardar o pasar a otro dispositivo</small></span></button>
+    <button id="mRestore">♻️<span>Restaurar respaldo<small>Cargar un archivo .json</small></span></button>
+    <button id="mClearDone">🧹<span>Borrar tareas finalizadas</span></button>
+  </div>
+  <input type="file" id="fileRestore" accept="application/json,.json" hidden>
+  <div class="actions"><span class="spacer"></span><button class="btn" id="mClose">Cerrar</button></div>
+</div></div>
+
+<!-- Columnas -->
+<div class="overlay" id="ovCols"><div class="sheet">
+  <h2>Columnas</h2>
+  <p class="hint">La columna marcada con ✓ es la de “Finalizado”: al marcar una tarea con check se mueve ahí.</p>
+  <div id="colsList"></div>
+  <div class="actions"><button class="btn" id="colAdd">+ Agregar columna</button><span class="spacer"></span><button class="btn primary" id="colDone">Listo</button></div>
+</div></div>
+
+<!-- Sincronización -->
+<div class="overlay" id="ovSync"><div class="sheet">
+  <h2>Sincronizar con Google</h2>
+  <p class="hint">Tus tareas se guardan en una carpeta privada de tu Google Drive (solo esta app la ve) y se combinan entre tu celular, tablet y computadora. Sin internet sigues trabajando normal; al volver la conexión se sincroniza solo.</p>
+  <div id="syncInfo" class="hint" style="font-size:15px;color:var(--text)"></div>
+  <details id="syncAdv"><summary class="hint" style="cursor:pointer">Configuración avanzada (ID de cliente)</summary>
+    <div class="field" style="margin-top:8px"><label for="sClient">ID de cliente OAuth de Google</label><input id="sClient" placeholder="xxxxxxxx.apps.googleusercontent.com" autocomplete="off" spellcheck="false"></div>
+  </details>
+  <div class="actions"><button class="btn danger" id="sOff">Desconectar</button><span class="spacer"></span><button class="btn" id="sClose">Cerrar</button><button class="btn primary" id="sConnect">Conectar con Google</button></div>
+</div></div>
+
+<!-- Confirmación / información -->
+<div class="overlay" id="ovConfirm"><div class="sheet">
+  <h2 id="cfTitle"></h2><div id="cfBody" class="hint" style="font-size:15px;color:var(--text)"></div>
+  <div class="actions"><span class="spacer"></span><button class="btn" id="cfNo">Cancelar</button><button class="btn primary" id="cfYes">Aceptar</button></div>
+</div></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+/* ===== CONFIGURACIÓN =====
+   Pega aquí tu ID de cliente de Google (Google Cloud → Credenciales → ID de cliente OAuth, tipo "Aplicación web").
+   No es secreto: es seguro dejarlo en el código. */
+const CONFIG = { GOOGLE_CLIENT_ID: '' };
+const KEY = 'mi-tablero-estudio-v1';
+const $ = (s, r=document) => r.querySelector(s);
+const uid = () => Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-5);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2,'0');
+const TZ = (Intl.DateTimeFormat().resolvedOptions().timeZone) || 'America/Costa_Rica';
+
+/* ---------- Estado ---------- */
+function defaultState(){
+  return {
+    version:1,
+    columns:[
+      {id:'pend', name:'Pendientes'},
+      {id:'semana', name:'Esta semana'},
+      {id:'prog', name:'En progreso'},
+      {id:'fin', name:'Finalizado', done:true}
+    ],
+    cards:[],
+    settings:{notify:false, autoWeek:true}
+  };
+}
+function load(){
+  try{ const s = JSON.parse(localStorage.getItem(KEY)); if(s && Array.isArray(s.cards) && Array.isArray(s.columns)) return s; }catch(e){}
+  return null;
+}
+let state = load() || defaultState();
+state.settings = Object.assign({notify:false, autoWeek:true}, state.settings||{});
+function migrate(st){
+  st.deleted = st.deleted || {}; st.meta = Object.assign({colsAt:0, setAt:0}, st.meta||{});
+  for(const c of st.cards){ if(!c.updatedAt) c.updatedAt = c.created || 1; }
+  return st;
+}
+migrate(state);
+/* Seguimiento de cambios por tarea (para combinar entre dispositivos) */
+function cardSig(c){ const {updatedAt, notified, ...rest} = c; return JSON.stringify(rest); }
+function makeSnap(){ return {cards:Object.fromEntries(state.cards.map(c=>[c.id,cardSig(c)])), cols:JSON.stringify(state.columns), set:String(state.settings.autoWeek)}; }
+let snap = makeSnap();
+function stamp(){
+  const now = Date.now(), ids = new Set();
+  for(const c of state.cards){ ids.add(c.id); if(snap.cards[c.id] !== cardSig(c)) c.updatedAt = now; }
+  for(const id in snap.cards) if(!ids.has(id)) state.deleted[id] = now;
+  if(snap.cols !== JSON.stringify(state.columns)) state.meta.colsAt = now;
+  if(snap.set !== String(state.settings.autoWeek)) state.meta.setAt = now;
+  snap = makeSnap();
+}
+function save(noSync){
+  stamp();
+  try{ localStorage.setItem(KEY, JSON.stringify(state)); }
+  catch(e){ toast('No se pudo guardar en este dispositivo'); }
+  if(!noSync) scheduleSync();
+}
+// Pide al navegador que no borre los datos
+try{ navigator.storage && navigator.storage.persist && navigator.storage.persist(); }catch(e){}
+
+const doneCol = () => state.columns.find(c=>c.done) || state.columns[state.columns.length-1];
+const firstCol = () => state.columns.find(c=>!c.done) || state.columns[0];
+const colById = id => state.columns.find(c=>c.id===id);
+
+/* ---------- Fechas ---------- */
+function todayStr(d=new Date()){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function dueAt(c){ // momento de la tarea (sin hora = 8:00 a.m. para recordatorios)
+  if(!c.date) return null;
+  const [y,m,d] = c.date.split('-').map(Number);
+  const [hh,mm] = (c.time||'08:00').split(':').map(Number);
+  return new Date(y, m-1, d, hh, mm);
+}
+function endOfDue(c){
+  if(!c.date) return null;
+  if(c.time) return dueAt(c);
+  const [y,m,d] = c.date.split('-').map(Number); return new Date(y,m-1,d,23,59,59);
+}
+function daysUntil(c){
+  if(!c.date) return null;
+  const [y,m,d] = c.date.split('-').map(Number);
+  const t = new Date(); const a = new Date(t.getFullYear(),t.getMonth(),t.getDate());
+  return Math.round((new Date(y,m-1,d) - a)/86400000);
+}
+const DIAS = ['dom','lun','mar','mié','jue','vie','sáb'];
+const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+function fmtDue(c){
+  if(!c.date) return '';
+  const [y,m,d] = c.date.split('-').map(Number); const dt = new Date(y,m-1,d);
+  const n = daysUntil(c);
+  let label = n===0 ? 'Hoy' : n===1 ? 'Mañana' : n===-1 ? 'Ayer' : `${DIAS[dt.getDay()]} ${d} ${MESES[m-1]}`;
+  if(y !== new Date().getFullYear() && Math.abs(n)>1) label += ' '+y;
+  if(c.time) label += ' · ' + fmtTime(c.time);
+  return label;
+}
+function fmtTime(t){ const [h,m]=t.split(':').map(Number); const ap = h<12?'a.m.':'p.m.'; return `${((h+11)%12)+1}:${pad(m)} ${ap}`; }
+function dueClass(c){
+  if(!c.date || c.done) return c.done ? 'okc' : '';
+  const end = endOfDue(c); if(end < new Date()) return 'late';
+  return daysUntil(c)===0 ? 'today' : '';
+}
+
+/* ---------- Colores por materia ---------- */
+function subjectColor(s){
+  if(!s) return 'transparent';
+  let h=0; for(const ch of s.toLowerCase()) h = (h*31 + ch.charCodeAt(0)) % 360;
+  return `hsl(${h} 70% 55%)`;
+}
+
+/* ---------- Render ---------- */
+const board = $('#board'), agenda = $('#agenda');
+let view = 'board';
+function filters(){
+  const q = $('#fSearch').value.trim().toLowerCase(), s = $('#fSubject').value;
+  return c => (!s || (c.subject||'')===s) && (!q || (c.title+' '+(c.subject||'')+' '+(c.desc||'')).toLowerCase().includes(q));
+}
+function cardHTML(c){
+  const total = (c.checklist||[]).length, done = (c.checklist||[]).filter(i=>i.done).length;
+  const meta = [];
+  if(c.subject) meta.push(`<span class="chip" style="background:${subjectColor(c.subject)}22;color:inherit">${esc(c.subject)}</span>`);
+  if(c.date) meta.push(`<span class="chip ${dueClass(c)}">${dueClass(c)==='late'?'Vencida · ':''}${esc(fmtDue(c))}</span>`);
+  if(c.remind!=='' && c.remind!=null && c.date && !c.done) meta.push('<span title="Con recordatorio">🔔</span>');
+  if(total) meta.push(`<span>☑ ${done}/${total}</span>`);
+  if(c.desc) meta.push('<span title="Tiene notas">📝</span>');
+  return `<div class="card ${c.done?'done':''}" data-id="${c.id}" style="border-left-color:${subjectColor(c.subject)}">
+    <button class="check" data-act="toggle" aria-label="${c.done?'Marcar como pendiente':'Marcar como finalizada'}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5"><path d="M5 12l5 5L20 7"/></svg></button>
+    <div class="body"><div class="title">${esc(c.title)}</div>
+    ${meta.length?`<div class="meta">${meta.join('')}</div>`:''}
+    ${total?`<div class="progress"><i style="width:${Math.round(done/total*100)}%"></i></div>`:''}</div></div>`;
+}
+function render(){
+  const f = filters();
+  // Materias
+  const subjects = [...new Set(state.cards.map(c=>c.subject).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+  const sel = $('#fSubject'), cur = sel.value;
+  sel.innerHTML = '<option value="">Todas las materias</option>' + subjects.map(s=>`<option ${s===cur?'selected':''}>${esc(s)}</option>`).join('');
+  $('#subjectsList').innerHTML = subjects.map(s=>`<option value="${esc(s)}">`).join('');
+
+  if(view==='board'){
+    board.hidden=false; agenda.hidden=true;
+    board.innerHTML = state.columns.map(col=>{
+      const cards = state.cards.filter(c=>c.col===col.id && f(c)).sort((a,b)=>(a.order??0)-(b.order??0));
+      return `<section class="column" data-col="${col.id}">
+        <div class="col-head"><h2>${col.done?'✓ ':''}${esc(col.name)}</h2><span class="count">${cards.length}</span>
+          <button class="icon-btn" data-act="sort" data-col="${col.id}" title="Ordenar por fecha" aria-label="Ordenar por fecha"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4v16m0 0l-3-3m3 3l3-3M14 6h7M14 12h5M14 18h3"/></svg></button></div>
+        <div class="col-list" data-col="${col.id}">${cards.map(cardHTML).join('')}</div>
+        <button class="add-in-col" data-act="add" data-col="${col.id}">+ Agregar tarea</button>
+      </section>`;
+    }).join('');
+  } else {
+    board.hidden=true; agenda.hidden=false;
+    const list = state.cards.filter(c=>f(c) && !c.done).sort((a,b)=>{
+      if(!a.date && !b.date) return 0; if(!a.date) return 1; if(!b.date) return -1;
+      return dueAt(a)-dueAt(b);
+    });
+    const groups = {late:[], today:[], tomorrow:[], week:[], later:[], nodate:[]};
+    for(const c of list){
+      const n = daysUntil(c);
+      if(n===null) groups.nodate.push(c);
+      else if(endOfDue(c) < new Date()) groups.late.push(c);
+      else if(n===0) groups.today.push(c);
+      else if(n===1) groups.tomorrow.push(c);
+      else if(n<=7) groups.week.push(c);
+      else groups.later.push(c);
+    }
+    const names = {late:'Vencidas', today:'Hoy', tomorrow:'Mañana', week:'Próximos 7 días', later:'Más adelante', nodate:'Sin fecha'};
+    const html = Object.keys(groups).filter(k=>groups[k].length).map(k=>`<h3>${names[k]} (${groups[k].length})</h3>`+groups[k].map(cardHTML).join('')).join('');
+    agenda.innerHTML = html || '<div class="empty">No hay tareas pendientes 🎉</div>';
+  }
+  updateBanner();
+}
+function updateBanner(){
+  const pending = state.cards.filter(c=>!c.done && c.date);
+  const late = pending.filter(c=>endOfDue(c) < new Date()).length;
+  const today = pending.filter(c=>daysUntil(c)===0 && endOfDue(c) >= new Date()).length;
+  const b = $('#banner');
+  if(!state.cards.length){ b.innerHTML = '👋 Empieza con <b>+</b> o importa tu cronograma con <b>Cronograma</b>.'; b.classList.add('show'); return; }
+  const parts=[]; if(today) parts.push(`<b>${today}</b> para hoy`); if(late) parts.push(`<b style="color:var(--bad)">${late}</b> vencida${late>1?'s':''}`);
+  b.innerHTML = parts.length ? '📌 Tienes '+parts.join(' y ')+'.' : '';
+  b.classList.toggle('show', parts.length>0);
+}
+
+/* ---------- Acciones de tarjetas ---------- */
+function setDone(c, done){
+  c.done = done;
+  if(done){ c.prevCol = c.col !== doneCol().id ? c.col : (c.prevCol||firstCol().id); c.col = doneCol().id; c.completedAt = Date.now(); }
+  else { c.col = c.prevCol && colById(c.prevCol) && !colById(c.prevCol).done ? c.prevCol : firstCol().id; }
+  c.order = maxOrder(c.col)+1;
+}
+function maxOrder(col){ return state.cards.filter(c=>c.col===col).reduce((m,c)=>Math.max(m,c.order??0),0); }
+function moveCard(c, colId, index){
+  const col = colById(colId); if(!col) return;
+  const wasDone = c.done;
+  if(col.done && !c.done){ c.prevCol = c.col; c.done = true; c.completedAt = Date.now(); }
+  if(!col.done && c.done){ c.done = false; }
+  c.col = colId;
+  const others = state.cards.filter(x=>x.col===colId && x!==c).sort((a,b)=>(a.order??0)-(b.order??0));
+  others.splice(Math.max(0,Math.min(index,others.length)),0,c);
+  others.forEach((x,i)=>x.order=i);
+  if(!wasDone && c.done) toast('¡Tarea finalizada! ✅');
+}
+function autoWeek(){
+  if(!state.settings.autoWeek) return false;
+  const pend = state.columns.find(c=>c.id==='pend'), sem = state.columns.find(c=>c.id==='semana');
+  if(!pend || !sem) return false;
+  let moved=0;
+  for(const c of state.cards){
+    if(c.col==='pend' && !c.done && c.date){ const n=daysUntil(c); if(n!==null && n<=7){ c.col='semana'; c.order=maxOrder('semana')+1; moved++; } }
+  }
+  return moved>0;
+}
+
+/* Delegación de clics */
+let suppressClick = false;
+document.addEventListener('click', e=>{
+  if(suppressClick){ suppressClick=false; e.preventDefault(); e.stopPropagation(); return; }
+  const actEl = e.target.closest('[data-act]');
+  if(actEl){
+    const act = actEl.dataset.act;
+    if(act==='toggle'){ const c = state.cards.find(x=>x.id===actEl.closest('.card').dataset.id); if(c){ setDone(c,!c.done); if(c.done) toast('¡Tarea finalizada! ✅'); save(); render(); } return; }
+    if(act==='add'){ openEditor(null, actEl.dataset.col); return; }
+    if(act==='sort'){ const col=actEl.dataset.col; state.cards.filter(c=>c.col===col).sort((a,b)=>(dueAt(a)||8.64e15)-(dueAt(b)||8.64e15)).forEach((c,i)=>c.order=i); save(); render(); toast('Ordenado por fecha'); return; }
+  }
+  const card = e.target.closest('.card');
+  if(card && (board.contains(card) || agenda.contains(card))) openEditor(card.dataset.id);
+}, true);
+
+/* ---------- Arrastrar y soltar (mouse y táctil) ---------- */
+let drag = null;
+board.addEventListener('contextmenu', e=>{ if(e.target.closest('.card')) e.preventDefault(); });
+board.addEventListener('pointerdown', e=>{
+  const cardEl = e.target.closest('.card');
+  if(!cardEl || e.target.closest('button') || (e.pointerType==='mouse' && e.button!==0)) return;
+  const st = {id:cardEl.dataset.id, el:cardEl, x:e.clientX, y:e.clientY, pid:e.pointerId, touch:e.pointerType!=='mouse', started:false, timer:null};
+  drag = st;
+  if(st.touch) st.timer = setTimeout(()=>beginDrag(st.x, st.y), 380);
+});
+function beginDrag(x,y){
+  if(!drag || drag.started) return;
+  drag.started = true;
+  const r = drag.el.getBoundingClientRect();
+  const g = drag.el.cloneNode(true); g.classList.add("drag-ghost"); g.style.width = r.width+'px'; g.style.left=r.left+'px'; g.style.top=r.top+'px';
+  document.body.appendChild(g);
+  drag.ghost = g; drag.dx = x - r.left; drag.dy = y - r.top;
+  drag.ph = document.createElement('div'); drag.ph.className='placeholder'; drag.ph.style.height = r.height+'px';
+  drag.el.after(drag.ph); drag.el.classList.add('dragging-src'); drag.el.style.display='none';
+  document.body.classList.add('dragging');
+  if(navigator.vibrate) try{navigator.vibrate(15)}catch(e){}
+  autoScrollLoop();
+}
+function onMove(x,y){
+  if(!drag) return;
+  if(!drag.started){
+    const dist = Math.hypot(x-drag.x, y-drag.y);
+    if(drag.touch){ if(dist>10){ clearTimeout(drag.timer); drag=null; } return; }
+    if(dist>6) beginDrag(x,y); else return;
+  }
+  drag.lx=x; drag.ly=y;
+  drag.ghost.style.left = (x-drag.dx)+'px'; drag.ghost.style.top = (y-drag.dy)+'px';
+  const under = document.elementFromPoint(x,y);
+  const list = under && (under.closest('.col-list') || (under.closest('.column') && under.closest('.column').querySelector('.col-list')));
+  if(!list) return;
+  const cards = [...list.querySelectorAll('.card:not(.dragging-src)')];
+  let before = null;
+  for(const c of cards){ const r=c.getBoundingClientRect(); if(y < r.top + r.height/2){ before=c; break; } }
+  if(before) list.insertBefore(drag.ph, before); else list.appendChild(drag.ph);
+}
+function endDrag(cancel){
+  if(!drag) return;
+  clearTimeout(drag.timer);
+  const st = drag; drag = null;
+  if(!st.started) return;
+  suppressClick = true; setTimeout(()=>suppressClick=false, 50);
+  st.ghost.remove(); document.body.classList.remove('dragging');
+  const list = st.ph.parentElement;
+  if(!cancel && list){
+    const idx = [...list.children].filter(n=>n.classList.contains('card') && !n.classList.contains('dragging-src') || n===st.ph).indexOf(st.ph);
+    const c = state.cards.find(x=>x.id===st.id);
+    if(c){ moveCard(c, list.dataset.col, idx); save(); }
+  }
+  render();
+}
+window.addEventListener('pointermove', e=>{ if(drag) onMove(e.clientX, e.clientY); }, {passive:true});
+window.addEventListener('pointerup', ()=>endDrag(false));
+window.addEventListener('pointercancel', ()=>{ if(drag && !drag.started){ clearTimeout(drag.timer); drag=null; } });
+// En táctil: una vez iniciado el arrastre, evita que la pantalla se desplace
+window.addEventListener('touchmove', e=>{ if(drag && drag.started){ e.preventDefault(); const t=e.touches[0]; onMove(t.clientX,t.clientY); } }, {passive:false});
+window.addEventListener('touchend', ()=>{ if(drag && drag.started) endDrag(false); });
+function autoScrollLoop(){
+  if(!drag || !drag.started) return;
+  const x=drag.lx, y=drag.ly, W=window.innerWidth, edge=50;
+  if(x!=null){
+    if(x < edge) board.scrollLeft -= 12; else if(x > W-edge) board.scrollLeft += 12;
+    const under = document.elementFromPoint(x,y); const list = under && under.closest('.col-list');
+    if(list){ const r=list.getBoundingClientRect(); if(y<r.top+40) list.scrollTop-=10; else if(y>r.bottom-40) list.scrollTop+=10; }
+  }
+  requestAnimationFrame(autoScrollLoop);
+}
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ if(drag) endDrag(true); closeAll(); } });
+
+/* ---------- Editor ---------- */
+let editing = null, draftChecklist = [];
+function openEditor(id, colId){
+  const c = id ? state.cards.find(x=>x.id===id) : null;
+  editing = c;
+  $('#cardTitle').textContent = c ? 'Editar tarea' : 'Nueva tarea';
+  $('#cTitle').value = c ? c.title : '';
+  $('#cSubject').value = c ? (c.subject||'') : ($('#fSubject').value||'');
+  $('#cDate').value = c ? (c.date||'') : '';
+  $('#cTime').value = c ? (c.time||'') : '';
+  $('#cRemind').value = c ? (c.remind ?? '') : '1440';
+  $('#cDesc').value = c ? (c.desc||'') : '';
+  $('#cCol').innerHTML = state.columns.map(col=>`<option value="${col.id}">${esc(col.name)}</option>`).join('');
+  $('#cCol').value = c ? c.col : (colId || firstCol().id);
+  draftChecklist = c ? JSON.parse(JSON.stringify(c.checklist||[])) : [];
+  renderChecklist();
+  $('#cDelete').style.display = c ? '' : 'none';
+  show('#ovCard');
+  if(!c) setTimeout(()=>$('#cTitle').focus(), 50);
+}
+function renderChecklist(){
+  $('#cChecklist').innerHTML = draftChecklist.map((it,i)=>`<div class="cl-item ${it.done?'done':''}" data-i="${i}">
+    <input type="checkbox" ${it.done?'checked':''} aria-label="Hecho"><input type="text" value="${esc(it.text)}">
+    <button class="icon-btn" data-rm="${i}" aria-label="Quitar">✕</button></div>`).join('');
+}
+$('#cChecklist').addEventListener('change', e=>{
+  const row = e.target.closest('.cl-item'); if(!row) return; const it = draftChecklist[+row.dataset.i];
+  if(e.target.type==='checkbox'){ it.done = e.target.checked; row.classList.toggle('done', it.done); }
+});
+$('#cChecklist').addEventListener('input', e=>{ const row=e.target.closest('.cl-item'); if(row && e.target.type==='text') draftChecklist[+row.dataset.i].text = e.target.value; });
+$('#cChecklist').addEventListener('click', e=>{ const b=e.target.closest('[data-rm]'); if(b){ draftChecklist.splice(+b.dataset.rm,1); renderChecklist(); } });
+function addItem(){ const v=$('#cNewItem').value.trim(); if(!v) return; draftChecklist.push({id:uid(), text:v, done:false}); $('#cNewItem').value=''; renderChecklist(); $('#cNewItem').focus(); }
+$('#cAddItem').onclick = addItem;
+$('#cNewItem').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); addItem(); } });
+
+function readEditor(){
+  return {
+    title: $('#cTitle').value.trim(),
+    subject: $('#cSubject').value.trim(),
+    date: $('#cDate').value, time: $('#cTime').value,
+    remind: $('#cRemind').value, desc: $('#cDesc').value.trim(),
+    col: $('#cCol').value,
+    checklist: draftChecklist.filter(i=>i.text.trim())
+  };
+}
+$('#cSave').onclick = ()=>{
+  const v = readEditor();
+  if(!v.title){ toast('Escribe el nombre de la tarea'); $('#cTitle').focus(); return; }
+  let c = editing;
+  if(!c){ c = {id:uid(), created:Date.now(), done:false}; state.cards.push(c); c.col = null; }
+  const changedTiming = c.date!==v.date || c.time!==v.time || c.remind!==v.remind;
+  const targetCol = v.col;
+  Object.assign(c, {title:v.title, subject:v.subject, date:v.date, time:v.time, remind:v.remind, desc:v.desc, checklist:v.checklist});
+  if(changedTiming) c.notified = {};
+  if(c.col !== targetCol) moveCard(c, targetCol, 1e9);
+  autoWeek();
+  // checklist completa → sugerir finalizar
+  const allDone = c.checklist.length && c.checklist.every(i=>i.done);
+  save(); closeAll(); render();
+  if(allDone && !c.done){ confirmBox('¿Finalizar la tarea?', 'Completaste todos los pasos del checklist.', ()=>{ setDone(c,true); save(); render(); toast('¡Tarea finalizada! ✅'); }); }
+};
+$('#cCancel').onclick = closeAll;
+$('#cDelete').onclick = ()=>{ const c=editing; if(!c) return; confirmBox('Eliminar tarea', `Se eliminará “${esc(c.title)}”. No se puede deshacer.`, ()=>{ state.cards = state.cards.filter(x=>x!==c); save(); closeAll(); render(); toast('Tarea eliminada'); }); };
+$('#cGcal').onclick = ()=>{
+  const v = readEditor(); if(!v.title || !v.date){ toast('Pon nombre y fecha para enviarla a Google Calendar'); return; }
+  openLink(gcalUrl(v));
+};
+$('#cIcs').onclick = ()=>{
+  const v = readEditor(); if(!v.title || !v.date){ toast('Pon nombre y fecha para crear el evento'); return; }
+  download(slug(v.title)+'.ics', buildIcs([Object.assign({id: editing?editing.id:uid()}, v)]), 'text/calendar');
+};
+
+/* ---------- Google Calendar y .ics ---------- */
+function ymd(dateStr){ return dateStr.replace(/-/g,''); }
+function addDays(dateStr, n){ const [y,m,d]=dateStr.split('-').map(Number); return todayStr(new Date(y,m-1,d+n)); }
+function localStamp(dt){ return dt.getFullYear()+pad(dt.getMonth()+1)+pad(dt.getDate())+'T'+pad(dt.getHours())+pad(dt.getMinutes())+'00'; }
+function utcStamp(dt){ return dt.getUTCFullYear()+pad(dt.getUTCMonth()+1)+pad(dt.getUTCDate())+'T'+pad(dt.getUTCHours())+pad(dt.getUTCMinutes())+pad(dt.getUTCSeconds())+'Z'; }
+function details(c){
+  const lines=[];
+  if(c.subject) lines.push('Materia: '+c.subject);
+  if(c.desc) lines.push(c.desc);
+  if(c.checklist && c.checklist.length) lines.push('Checklist:\n'+c.checklist.map(i=>(i.done?'✔ ':'☐ ')+i.text).join('\n'));
+  lines.push('— Mi Tablero de Estudio');
+  return lines.join('\n\n');
+}
+function gcalUrl(c){
+  let dates;
+  if(c.time){ const s=dueAt(c), e=new Date(s.getTime()+60*60000); dates = localStamp(s)+'/'+localStamp(e); }
+  else dates = ymd(c.date)+'/'+ymd(addDays(c.date,1));
+  const title = (c.subject? '['+c.subject+'] ' : '') + c.title;
+  return 'https://calendar.google.com/calendar/render?action=TEMPLATE'
+    + '&text='+encodeURIComponent(title)
+    + '&dates='+dates
+    + '&details='+encodeURIComponent(details(c))
+    + '&ctz='+encodeURIComponent(TZ);
+}
+function icsEsc(s){ return String(s).replace(/\\/g,'\\\\').replace(/\n/g,'\\n').replace(/,/g,'\\,').replace(/;/g,'\\;'); }
+function fold(line){ const out=[]; while(line.length>73){ out.push(line.slice(0,73)); line=' '+line.slice(73); } out.push(line); return out.join('\r\n'); }
+function buildIcs(cards){
+  const L = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Mi Tablero de Estudio//ES','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
+  const now = utcStamp(new Date());
+  for(const c of cards){
+    if(!c.date) continue;
+    L.push('BEGIN:VEVENT','UID:'+c.id+'@mi-tablero','DTSTAMP:'+now);
+    if(c.time){ const s=dueAt(c); L.push('DTSTART:'+utcStamp(s),'DTEND:'+utcStamp(new Date(s.getTime()+3600000))); }
+    else L.push('DTSTART;VALUE=DATE:'+ymd(c.date),'DTEND;VALUE=DATE:'+ymd(addDays(c.date,1)));
+    L.push(fold('SUMMARY:'+icsEsc((c.subject?'['+c.subject+'] ':'')+c.title)));
+    L.push(fold('DESCRIPTION:'+icsEsc(details(c))));
+    if(c.remind!=='' && c.remind!=null){
+      let mins = +c.remind;
+      // en eventos de todo el día, el aviso se calcula desde las 00:00; ajustamos a las 8:00 a.m.
+      if(!c.time) mins = Math.max(0, mins - 8*60);
+      L.push('BEGIN:VALARM','ACTION:DISPLAY',fold('DESCRIPTION:'+icsEsc(c.title)),'TRIGGER:'+(mins>=0?'-':'')+'PT'+Math.abs(mins)+'M','END:VALARM');
+    }
+    L.push('END:VEVENT');
+  }
+  L.push('END:VCALENDAR');
+  return L.join('\r\n');
+}
+function slug(s){ return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'').toLowerCase().slice(0,40) || 'tarea'; }
+function download(name, text, type){
+  try{
+    const blob = new Blob([text], {type: type+';charset=utf-8'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+    toast('Archivo descargado: '+name);
+  }catch(e){ toast('No se pudo descargar en este navegador'); }
+}
+function openLink(url){ const a=document.createElement('a'); a.href=url; a.target='_blank'; a.rel='noopener'; document.body.appendChild(a); a.click(); a.remove(); }
+
+/* ---------- Notificaciones ---------- */
+function notifSupported(){ return 'Notification' in window; }
+function refreshNotifLabel(){
+  const el = $('#mNotifState');
+  if(!notifSupported()) el.textContent = 'No disponibles aquí. En iPhone: primero instala la app en la pantalla de inicio.';
+  else if(Notification.permission==='granted' && state.settings.notify) el.textContent = 'Activadas ✓ (toca para probar)';
+  else if(Notification.permission==='denied') el.textContent = 'Bloqueadas: actívalas en los ajustes del navegador';
+  else el.textContent = 'Avisos en este dispositivo';
+  $('#mAutoWeekState').textContent = state.settings.autoWeek ? 'Activado: las tareas a 7 días o menos pasan solas' : 'Desactivado';
+}
+async function sysNotify(title, body, tag){
+  if(!(notifSupported() && Notification.permission==='granted' && state.settings.notify)) return false;
+  try{
+    const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+    if(reg){ await reg.showNotification(title, {body, tag, icon:'icon-192.png', badge:'icon-192.png', vibrate:[100,50,100]}); return true; }
+    new Notification(title, {body, tag, icon:'icon-192.png'}); return true;
+  }catch(e){ return false; }
+}
+function remindLabel(m){ m=+m; if(m===0) return 'ahora'; if(m<60) return `en ${m} min`; if(m<1440) return `en ${m/60} h`; return m===1440?'mañana':`en ${Math.round(m/1440)} días`; }
+function checkReminders(){
+  const now = new Date(); let changed=false;
+  for(const c of state.cards){
+    if(c.done || !c.date || c.remind==='' || c.remind==null) continue;
+    const at = dueAt(c); const trig = new Date(at.getTime() - (+c.remind)*60000);
+    c.notified = c.notified || {};
+    const key = c.date+'|'+c.time+'|'+c.remind;
+    if(now >= trig && !c.notified[key]){
+      // no avisar de cosas que vencieron hace más de 1 día
+      if(now - endOfDue(c) < 86400000){
+        const body = (c.subject?c.subject+' · ':'') + fmtDue(c);
+        const title = now >= at ? '⏰ '+c.title : '🔔 '+c.title+' ('+remindLabel(c.remind)+')';
+        sysNotify(title, body, c.id);
+        toast(title);
+      }
+      c.notified[key]=true; changed=true;
+    }
+  }
+  if(changed) save();
+}
+
+/* ---------- Importar cronograma ---------- */
+let parsed = [];
+function guessYear(m,d){
+  const t=new Date(); let y=t.getFullYear();
+  const cand=new Date(y,m-1,d); if(t - cand > 60*86400000) y++;
+  return y;
+}
+function parseLine(raw){
+  let line = raw.trim(); if(!line) return null;
+  let date='', time='', m;
+  if((m = line.match(/(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/))){ date = `${m[1]}-${pad(m[2])}-${pad(m[3])}`; line=line.replace(m[0],' '); }
+  else if((m = line.match(/(\d{1,2})[\/\.-](\d{1,2})(?:[\/\.-](\d{2,4}))?(?!\d)/))){
+    const d=+m[1], mo=+m[2]; if(mo>=1&&mo<=12&&d>=1&&d<=31){ const y = m[3] ? (m[3].length===2?'20'+m[3]:m[3]) : guessYear(mo,d); date=`${y}-${pad(mo)}-${pad(d)}`; line=line.replace(m[0],' '); }
+  }
+  if((m = line.match(/(\d{1,2})[:h](\d{2})\s*(a\.?\s?m\.?|p\.?\s?m\.?)?/i))){
+    let h=+m[1]; const mi=+m[2]; const ap=(m[3]||'').toLowerCase().replace(/[\.\s]/g,'');
+    if(ap==='pm' && h<12) h+=12; if(ap==='am' && h===12) h=0;
+    if(h<24 && mi<60){ time=`${pad(h)}:${pad(mi)}`; line=line.replace(m[0],' '); }
+  }
+  const parts = line.split(/\s*[|;\t]\s*|\s+[-–—]\s+|^\s*[-–—]\s*|\s*,\s+(?=[^,]*$)/).map(s=>s.trim().replace(/^[-–—:,]+|[-–—:,]+$/g,'').trim()).filter(Boolean);
+  if(!parts.length) return null;
+  return {title: parts[0], subject: parts[1]||'', date, time, desc: parts.slice(2).join(' · ')};
+}
+$('#impCheck').onclick = ()=>{
+  parsed = $('#impText').value.split(/\r?\n/).map(parseLine).filter(Boolean);
+  const box = $('#impPreview');
+  if(!parsed.length){ box.innerHTML='<p class="hint">No encontré tareas. Revisa el formato del ejemplo.</p>'; $('#impDo').disabled=true; return; }
+  box.innerHTML = `<table class="preview"><tr><th>Fecha</th><th>Tarea</th><th>Materia</th></tr>${parsed.map(p=>`<tr><td>${p.date?esc(fmtDue(p)):'<i>sin fecha</i>'}</td><td>${esc(p.title)}</td><td>${esc(p.subject)}</td></tr>`).join('')}</table>`;
+  $('#impDo').disabled=false;
+};
+$('#impText').addEventListener('input', ()=>{ $('#impDo').disabled=true; });
+$('#impDo').onclick = ()=>{
+  const remind = $('#impRemind').value, colSel = $('#impCol').value;
+  for(const p of parsed){
+    let col = colSel;
+    if(col==='auto'){
+      const n = p.date ? daysUntil(p) : null;
+      col = (n!==null && n<=7 && colById('semana')) ? 'semana' : firstCol().id;
+    }
+    const c = Object.assign({id:uid(), created:Date.now(), done:false, remind: p.date?remind:'', checklist:[], notified:{}}, p, {col, order: maxOrder(col)+1});
+    state.cards.push(c);
+  }
+  save(); closeAll(); render();
+  toast(`Se importaron ${parsed.length} tareas`);
+  confirmBox('¿Agregarlas a Google Calendar?', 'Puedo descargar un archivo .ics con todas las tareas y sus alarmas. Luego lo abres o lo importas en Google Calendar (calendar.google.com → Configuración → Importar).', ()=>{
+    download('cronograma.ics', buildIcs(state.cards.filter(c=>parsed.some(p=>p.title===c.title && p.date===c.date) && c.date)), 'text/calendar');
+  }, 'Descargar .ics');
+};
+$('#btnImport').onclick = ()=>{
+  $('#impCol').innerHTML = '<option value="auto">Automático por fecha</option>' + state.columns.filter(c=>!c.done).map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
+  $('#impPreview').innerHTML=''; $('#impDo').disabled=true; show('#ovImport');
+};
+$('#impCancel').onclick = closeAll;
+
+/* ---------- Menú ---------- */
+$('#btnMenu').onclick = ()=>{ refreshNotifLabel(); $('#mInstall').style.display = isStandalone() ? 'none' : ''; show('#ovMenu'); };
+$('#mClose').onclick = closeAll;
+$('#mNotif').onclick = async ()=>{
+  if(!notifSupported()){ closeAll(); return showInfo('Notificaciones', iosHelp()); }
+  if(Notification.permission==='granted' && state.settings.notify){ const ok = await sysNotify('🔔 Prueba de Mi Tablero','Las notificaciones funcionan en este dispositivo.','test'); if(!ok) toast('No se pudo mostrar'); return; }
+  let p = Notification.permission;
+  try{ p = await Notification.requestPermission(); }catch(e){}
+  state.settings.notify = (p==='granted'); save(); refreshNotifLabel();
+  if(p==='granted'){ sysNotify('🔔 Notificaciones activadas','Te avisaré de tus tareas mientras la app esté abierta o en segundo plano.','test'); }
+  else toast('Permiso no concedido');
+};
+$('#mAutoWeek').onclick = ()=>{ state.settings.autoWeek = !state.settings.autoWeek; if(autoWeek()) toast('Tareas movidas a “Esta semana”'); save(); refreshNotifLabel(); render(); };
+$('#mIcsAll').onclick = ()=>{ const list = state.cards.filter(c=>!c.done && c.date); if(!list.length) return toast('No hay tareas pendientes con fecha'); download('mis-tareas.ics', buildIcs(list), 'text/calendar'); };
+$('#mBackup').onclick = ()=>download('respaldo-mi-tablero-'+todayStr()+'.json', JSON.stringify(state,null,1), 'application/json');
+$('#mRestore').onclick = ()=>$('#fileRestore').click();
+$('#fileRestore').onchange = e=>{
+  const f = e.target.files[0]; if(!f) return;
+  f.text().then(t=>{
+    const s = JSON.parse(t); if(!s || !Array.isArray(s.cards) || !Array.isArray(s.columns)) throw new Error();
+    confirmBox('Restaurar respaldo', `El respaldo tiene ${s.cards.length} tareas. Reemplazará lo que hay ahora en este dispositivo.`, ()=>{ const old=state.cards.map(c=>c.id); state = migrate(s); const now=Date.now(); state.cards.forEach(c=>c.updatedAt=now); old.forEach(id=>{ if(!state.cards.some(c=>c.id===id)) state.deleted[id]=now; }); state.meta.colsAt=now; snap=makeSnap(); state.settings = Object.assign({notify:false, autoWeek:true}, s.settings||{}); save(); closeAll(); render(); toast('Respaldo restaurado'); });
+  }).catch(()=>toast('Ese archivo no es un respaldo válido'));
+  e.target.value='';
+};
+$('#mClearDone').onclick = ()=>{ const n = state.cards.filter(c=>c.done).length; if(!n) return toast('No hay tareas finalizadas'); confirmBox('Borrar finalizadas', `Se eliminarán ${n} tareas finalizadas.`, ()=>{ state.cards = state.cards.filter(c=>!c.done); save(); closeAll(); render(); }); };
+$('#mColumns').onclick = ()=>{ renderCols(); show('#ovCols'); };
+$('#mInstall').onclick = ()=>{
+  if(deferredPrompt){ deferredPrompt.prompt(); deferredPrompt.userChoice.finally(()=>deferredPrompt=null); return; }
+  closeAll(); showInfo('Instalar en tu celular', iosHelp());
+};
+function iosHelp(){
+  return `<b>iPhone / iPad (Safari):</b> toca el botón Compartir <b>⬆︎</b> → <b>“Agregar a pantalla de inicio”</b>. Abre la app desde ese ícono y luego activa las notificaciones en Opciones (requiere iOS 16.4 o superior).<br><br>
+  <b>Android (Chrome):</b> menú <b>⋮</b> → <b>“Instalar app”</b> o “Agregar a pantalla principal”.<br><br>
+  <b>Computadora (Chrome/Edge):</b> ícono de instalar en la barra de direcciones.`;
+}
+function isStandalone(){ return matchMedia('(display-mode: standalone)').matches || navigator.standalone===true; }
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferredPrompt = e; });
+
+/* Columnas */
+function renderCols(){
+  $('#colsList').innerHTML = state.columns.map((c,i)=>`<div class="row" style="align-items:center;margin-bottom:8px" data-i="${i}">
+    <button class="btn ${c.done?'primary':''}" data-cdone="${i}" style="flex:0 0 auto" title="Marcar como columna Finalizado">✓</button>
+    <input value="${esc(c.name)}" data-cname="${i}" style="border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:8px 10px">
+    <button class="icon-btn" data-cup="${i}" style="flex:0 0 auto" aria-label="Subir">◀</button>
+    <button class="icon-btn" data-cdown="${i}" style="flex:0 0 auto" aria-label="Bajar">▶</button>
+    <button class="icon-btn" data-cdel="${i}" style="flex:0 0 auto" aria-label="Eliminar">🗑</button></div>`).join('');
+}
+$('#colsList').addEventListener('input', e=>{ const i=e.target.dataset.cname; if(i!=null){ state.columns[+i].name = e.target.value || 'Sin nombre'; save(); } });
+$('#colsList').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return; const d=b.dataset;
+  if(d.cdone!=null){ state.columns.forEach((c,i)=>c.done = i===+d.cdone); state.cards.forEach(c=>{ c.done = colById(c.col)?.done || false; }); }
+  if(d.cup!=null && +d.cup>0){ const i=+d.cup; [state.columns[i-1],state.columns[i]]=[state.columns[i],state.columns[i-1]]; }
+  if(d.cdown!=null && +d.cdown<state.columns.length-1){ const i=+d.cdown; [state.columns[i+1],state.columns[i]]=[state.columns[i],state.columns[i+1]]; }
+  if(d.cdel!=null){ const col=state.columns[+d.cdel]; const n=state.cards.filter(c=>c.col===col.id).length;
+    if(state.columns.length<=2) return toast('Debe haber al menos 2 columnas');
+    if(n) return toast(`Primero mueve las ${n} tareas de “${col.name}”`);
+    state.columns.splice(+d.cdel,1); if(!state.columns.some(c=>c.done)) state.columns[state.columns.length-1].done=true; }
+  save(); renderCols(); render();
+});
+$('#colAdd').onclick = ()=>{ const done = state.columns.findIndex(c=>c.done); const col={id:uid(), name:'Nueva columna'}; if(done>=0) state.columns.splice(done,0,col); else state.columns.push(col); save(); renderCols(); render(); };
+$('#colDone').onclick = ()=>{ closeAll(); render(); };
+
+/* ---------- Modales y avisos ---------- */
+function show(sel){ document.querySelectorAll('.overlay.show').forEach(o=>o.classList.remove('show')); $(sel).classList.add('show'); }
+function closeAll(){ document.querySelectorAll('.overlay.show').forEach(o=>o.classList.remove('show')); }
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click', e=>{ if(e.target===o) closeAll(); }));
+let cfAction=null;
+function confirmBox(title, body, onYes, yesLabel){ $('#cfTitle').textContent=title; $('#cfBody').innerHTML=body; $('#cfYes').textContent=yesLabel||'Aceptar'; $('#cfNo').style.display=''; cfAction=onYes; show('#ovConfirm'); }
+function showInfo(title, body){ $('#cfTitle').textContent=title; $('#cfBody').innerHTML=body; $('#cfYes').textContent='Entendido'; $('#cfNo').style.display='none'; cfAction=null; show('#ovConfirm'); }
+$('#cfYes').onclick = ()=>{ const a=cfAction; cfAction=null; closeAll(); if(a) a(); };
+$('#cfNo').onclick = ()=>{ cfAction=null; closeAll(); };
+let toastT=null;
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'), 2600); }
+
+/* ---------- Vistas, filtros, red ---------- */
+$('#tabBoard').onclick = ()=>{ view='board'; $('#tabBoard').classList.add('on'); $('#tabAgenda').classList.remove('on'); render(); };
+$('#tabAgenda').onclick = ()=>{ view='agenda'; $('#tabAgenda').classList.add('on'); $('#tabBoard').classList.remove('on'); render(); };
+$('#fSearch').addEventListener('input', render);
+$('#fSubject').addEventListener('change', render);
+$('#fab').onclick = ()=>openEditor(null);
+function net(){ if(!navigator.onLine) setSyncStatus('offline'); else if(syncStatus==='offline') setSyncStatus(isConnected()?'idle':'off'); }
+window.addEventListener('online', ()=>{ net(); syncNow(false); }); window.addEventListener('offline', ()=>{ net(); toast('Sin internet: la app sigue funcionando'); });
+// Sincroniza entre pestañas abiertas
+window.addEventListener('storage', e=>{ if(e.key===KEY){ const s=load(); if(s){ state=migrate(s); snap=makeSnap(); render(); } } });
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden){ if(autoWeek()) save(); checkReminders(); render(); syncNow(false); } });
+
+
+/* ---------- Sincronización con Google Drive ---------- */
+const SYNC_KEY = 'mi-tablero-sync';
+const SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
+const FILE_NAME = 'mi-tablero.json';
+let sync = (()=>{ try{ return JSON.parse(localStorage.getItem(SYNC_KEY)) || {}; }catch(e){ return {}; } })();
+function saveSync(){ try{ localStorage.setItem(SYNC_KEY, JSON.stringify(sync)); }catch(e){} }
+const clientId = () => (sync.clientId || CONFIG.GOOGLE_CLIENT_ID || '').trim();
+const isConnected = () => !!(sync.connected && clientId());
+const tokenValid = () => sync.token && sync.exp && Date.now() < sync.exp;
+let syncStatus = 'off', syncing = false, again = false, syncTimer = null, tokenClient = null;
+function setSyncStatus(st){
+  syncStatus = st; const b = $('#btnSync');
+  b.className = 'icon-btn sync-btn ' + st;
+  const t = {off:'Sincronizar con Google (no conectado)', idle:'Sincronizado con Google', ok:'Sincronizado con Google', syncing:'Sincronizando…', needauth:'Toca para reconectar con Google', error:'Error al sincronizar: toca para reintentar', offline:'Sin internet: los cambios se subirán al volver la conexión'}[st] || '';
+  b.title = t; b.setAttribute('aria-label', t);
+  const ms = $('#mSyncState'); if(ms) ms.textContent = isConnected() ? (st==='needauth' ? 'Toca para reconectar' : 'Conectado' + (sync.lastSync ? ' · última vez ' + new Date(sync.lastSync).toLocaleTimeString('es',{hour:'numeric',minute:'2-digit'}) : '')) : 'Tus tareas en todos tus dispositivos';
+}
+function loadGIS(){
+  return new Promise((res, rej)=>{
+    if(window.google && google.accounts && google.accounts.oauth2) return res();
+    if(!navigator.onLine) return rej(new Error('offline'));
+    let s = document.getElementById('gis');
+    if(!s){ s = document.createElement('script'); s.id='gis'; s.src='https://accounts.google.com/gsi/client'; s.async=true; document.head.appendChild(s); }
+    s.addEventListener('load', ()=>res()); s.addEventListener('error', ()=>rej(new Error('gis')));
+  });
+}
+let pendingAuth = null;
+function prepareTokenClient(){
+  if(tokenClient || !clientId() || !(window.google && google.accounts && google.accounts.oauth2)) return tokenClient;
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: clientId(), scope: SCOPE,
+    callback: r => {
+      const p = pendingAuth; pendingAuth = null;
+      if(r && r.access_token){ sync.token = r.access_token; sync.exp = Date.now() + ((+r.expires_in||3600) - 120)*1000; sync.connected = true; saveSync(); p && p.res(); }
+      else p && p.rej(new Error((r && r.error) || 'auth'));
+    },
+    error_callback: e => { const p = pendingAuth; pendingAuth = null; p && p.rej(new Error((e && e.type) || 'popup')); }
+  });
+  return tokenClient;
+}
+// Debe llamarse directamente desde un toque/clic (para que el navegador permita la ventana de Google)
+function requestToken(){
+  const tc = prepareTokenClient();
+  if(!tc) return Promise.reject(new Error('gis'));
+  return new Promise((res, rej)=>{ pendingAuth = {res, rej}; tc.requestAccessToken({prompt: sync.connected ? '' : 'consent'}); });
+}
+async function gfetch(url, opts={}){
+  const r = await fetch(url, Object.assign({}, opts, {headers: Object.assign({}, opts.headers||{}, {Authorization:'Bearer '+sync.token})}));
+  if(r.status===401 || r.status===403){ sync.token=null; saveSync(); throw new Error('auth'); }
+  if(!r.ok) throw new Error('http '+r.status);
+  return r;
+}
+async function driveFind(){
+  const q = encodeURIComponent("name='"+FILE_NAME+"' and trashed=false");
+  const r = await gfetch('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&fields=files(id,modifiedTime)&orderBy=modifiedTime%20desc&q='+q);
+  const j = await r.json(); return (j.files && j.files[0] && j.files[0].id) || null;
+}
+async function driveRead(id){ const r = await gfetch('https://www.googleapis.com/drive/v3/files/'+id+'?alt=media'); return r.json(); }
+async function driveWrite(id, data){
+  const body = JSON.stringify(data);
+  if(id){ await gfetch('https://www.googleapis.com/upload/drive/v3/files/'+id+'?uploadType=media', {method:'PATCH', headers:{'Content-Type':'application/json'}, body}); return id; }
+  const bd = 'mtb' + uid();
+  const multi = '--'+bd+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+JSON.stringify({name:FILE_NAME, parents:['appDataFolder']})+'\r\n--'+bd+'\r\nContent-Type: application/json\r\n\r\n'+body+'\r\n--'+bd+'--';
+  const r = await gfetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {method:'POST', headers:{'Content-Type':'multipart/related; boundary='+bd}, body:multi});
+  return (await r.json()).id;
+}
+// Combina dos versiones: gana el cambio más reciente de cada tarea
+function mergeStates(local, remote){
+  remote = migrate(JSON.parse(JSON.stringify(remote)));
+  const deleted = Object.assign({}, remote.deleted);
+  for(const [id,t] of Object.entries(local.deleted)) deleted[id] = Math.max(t, deleted[id]||0);
+  const byId = new Map();
+  for(const c of remote.cards.concat(local.cards)){ const ex = byId.get(c.id); if(!ex || (c.updatedAt||0) > (ex.updatedAt||0)) byId.set(c.id, c); }
+  const cards = [...byId.values()].filter(c => !(deleted[c.id] && deleted[c.id] >= (c.updatedAt||0)));
+  const remoteCols = remote.meta.colsAt > local.meta.colsAt;
+  const columns = remoteCols ? remote.columns : local.columns;
+  const autoW = remote.meta.setAt > local.meta.setAt ? remote.settings.autoWeek : local.settings.autoWeek;
+  const cutoff = Date.now() - 90*86400000;
+  for(const id in deleted) if(deleted[id] < cutoff) delete deleted[id];
+  const ids = new Set(columns.map(c=>c.id)), fallback = (columns.find(c=>!c.done)||columns[0]).id;
+  for(const c of cards) if(!ids.has(c.col)) c.col = fallback;
+  return {version:1, columns, cards, deleted,
+    meta:{colsAt:Math.max(local.meta.colsAt, remote.meta.colsAt), setAt:Math.max(local.meta.setAt, remote.meta.setAt)},
+    settings:Object.assign({}, local.settings, {autoWeek:autoW})};
+}
+function forCloud(st){ const c = JSON.parse(JSON.stringify(st)); delete c.settings.notify; c.cards.forEach(x=>delete x.notified); return c; }
+function scheduleSync(){ if(!isConnected()) return; clearTimeout(syncTimer); syncTimer = setTimeout(()=>syncNow(false), 2500); }
+async function syncNow(interactive){
+  if(!clientId()){ if(interactive) openSync(); return; }
+  if(!isConnected() && !interactive) return;
+  if(!navigator.onLine){ setSyncStatus('offline'); if(interactive) toast('Sin internet: se sincronizará al volver la conexión'); return; }
+  if(!tokenValid()){
+    if(!interactive){ setSyncStatus('needauth'); return; }
+    try{ await requestToken(); }
+    catch(e){ setSyncStatus('needauth'); toast(e.message==='gis' ? 'No se pudo cargar Google. Revisa tu conexión.' : 'No se completó el inicio de sesión con Google'); return; }
+  }
+  if(syncing){ again = true; return; }
+  syncing = true; setSyncStatus('syncing');
+  try{
+    stamp();
+    let id = sync.fileId || null, remote = null;
+    if(id){ try{ remote = await driveRead(id); }catch(e){ if(String(e.message).startsWith('http 404')){ id = null; } else throw e; } }
+    if(!id){ id = await driveFind(); if(id) remote = await driveRead(id); }
+    const before = JSON.stringify(state);
+    const merged = remote ? mergeStates(state, remote) : state;
+    // conserva datos propios de este dispositivo
+    const notif = Object.fromEntries(state.cards.map(c=>[c.id, c.notified]));
+    merged.cards.forEach(c=>{ if(notif[c.id]) c.notified = notif[c.id]; });
+    merged.settings.notify = state.settings.notify;
+    state = merged; snap = makeSnap();
+    try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){}
+    const cloud = forCloud(state);
+    if(!remote || JSON.stringify(cloud) !== JSON.stringify(forCloud(migrate(remote)))) id = await driveWrite(id, cloud);
+    sync.fileId = id; sync.lastSync = Date.now(); saveSync();
+    if(JSON.stringify(state) !== before && !drag && !document.querySelector('#ovCard.show')) render();
+    setSyncStatus('ok');
+    if(interactive) toast('Sincronizado con Google ✓');
+  }catch(e){
+    if(e.message==='auth'){ setSyncStatus('needauth'); if(interactive) toast('La sesión de Google expiró: toca la nube para reconectar'); }
+    else { setSyncStatus('error'); if(interactive) toast('No se pudo sincronizar ('+e.message+')'); }
+  }finally{
+    syncing = false;
+    if(again){ again = false; setTimeout(()=>syncNow(false), 800); }
+  }
+}
+function openSync(){
+  $('#sClient').value = clientId();
+  const info = $('#syncInfo');
+  if(!clientId()){
+    info.innerHTML = '⚠️ Falta el <b>ID de cliente de Google</b>. Pégalo en <i>Configuración avanzada</i> (las instrucciones están en el archivo LEEME.md del proyecto).';
+    $('#syncAdv').open = true;
+  } else if(isConnected()){
+    info.innerHTML = '✅ Conectado con Google.' + (sync.lastSync ? '<br>Última sincronización: ' + new Date(sync.lastSync).toLocaleString('es') : '') + (tokenValid() ? '' : '<br>La sesión expiró: toca <b>Sincronizar ahora</b>.');
+  } else info.innerHTML = 'Toca <b>Conectar con Google</b> y elige tu cuenta.';
+  $('#sConnect').textContent = isConnected() ? 'Sincronizar ahora' : 'Conectar con Google';
+  $('#sOff').style.display = isConnected() ? '' : 'none';
+  show('#ovSync');
+  if(clientId()) loadGIS().then(prepareTokenClient).catch(()=>{});
+}
+$('#sClient').addEventListener('change', ()=>{
+  const v = $('#sClient').value.trim();
+  if(v && !/\.apps\.googleusercontent\.com$/.test(v)) { toast('Ese no parece un ID de cliente válido'); return; }
+  sync.clientId = v; sync.connected = false; sync.token = null; tokenClient = null; saveSync();
+  if(v){ loadGIS().then(prepareTokenClient).catch(()=>{}); }
+  openSync();
+});
+$('#sConnect').onclick = ()=>{
+  if(!clientId()){ toast('Primero pega el ID de cliente'); return; }
+  if(!tokenClient){ loadGIS().then(prepareTokenClient).then(()=>toast('Listo, toca otra vez “Conectar”')).catch(()=>toast('No se pudo cargar Google. ¿Tienes internet?')); return; }
+  closeAll(); syncNow(true);
+};
+$('#sOff').onclick = ()=>{
+  confirmBox('Desconectar de Google', 'Tus tareas se quedan en este dispositivo y en tu Drive, pero dejarán de sincronizarse aquí.', ()=>{
+    try{ if(sync.token && window.google) google.accounts.oauth2.revoke(sync.token, ()=>{}); }catch(e){}
+    sync = {clientId: sync.clientId}; saveSync(); setSyncStatus('off'); toast('Desconectado');
+  });
+};
+$('#sClose').onclick = closeAll;
+$('#mSync').onclick = openSync;
+$('#btnSync').onclick = ()=>{
+  if(!isConnected()) return openSync();
+  if(!tokenValid() && !tokenClient){ loadGIS().then(prepareTokenClient).catch(()=>{}); toast('Conectando… toca la nube otra vez'); return; }
+  syncNow(true);
+};
+
+/* ---------- Inicio ---------- */
+if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+setSyncStatus(isConnected() ? (tokenValid() ? 'idle' : 'needauth') : 'off');
+net();
+if(autoWeek()) save();
+if(isConnected() && navigator.onLine){ loadGIS().then(prepareTokenClient).catch(()=>{}); syncNow(false); }
+setInterval(()=>{ if(isConnected() && !document.hidden) syncNow(false); }, 120000);
+render();
+checkReminders();
+setInterval(()=>{ checkReminders(); }, 30000);
+setInterval(()=>{ if(!drag && !document.querySelector('.overlay.show')) render(); }, 5*60000);
+// Para pruebas
+window.__tablero = {get state(){return state;}, parseLine, buildIcs, gcalUrl, mergeStates, migrate};
+})();
+</script>
+</body>
+</html>
