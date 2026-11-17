@@ -245,7 +245,7 @@ body.locked .app, body.locked .fab, body.locked .drawer, body.locked .scrim{disp
     <input id="fSearch" type="search" placeholder="Buscar tarea…">
     <div class="zoom" title="Zoom del tablero"><button id="zOut" aria-label="Alejar">−</button><span id="zVal" title="Restablecer">100%</span><button id="zIn" aria-label="Acercar">+</button></div>
     <button class="hidden-cols" id="btnHiddenCols" hidden></button>
-    <select id="fSubject"><option value="">Todas las materias</option></select>
+    <select id="fSubject" aria-label="Filtrar por asunto, tema o curso"><option value="">Todos los asuntos / temas / cursos</option></select>
   </div>
   <div class="banner" id="banner"></div>
   <main>
@@ -315,7 +315,7 @@ body.locked .app, body.locked .fab, body.locked .drawer, body.locked .scrim{disp
   <h2 id="cardTitle">Nueva tarea</h2>
   <div class="field"><label for="cTitle">Tarea</label><input id="cTitle" placeholder="Ej: Estudiar capítulo 3"></div>
   <div class="row">
-    <div class="field"><label for="cSubject">Materia / curso</label><input id="cSubject" list="subjectsList" placeholder="Ej: Cálculo"></div>
+    <div class="field"><label for="cSubject">Asunto / Tema / Curso</label><input id="cSubject" list="subjectsList" placeholder="Ej: Cálculo, Proyecto X, Reunión"></div>
     <div class="field"><label for="cCol">Columna</label><select id="cCol"></select></div>
   </div>
   <datalist id="subjectsList"></datalist>
@@ -602,7 +602,7 @@ function render(){
   // Materias
   const subjects = [...new Set(state.cards.map(c=>c.subject).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
   const sel = $('#fSubject'), cur = sel.value;
-  sel.innerHTML = '<option value="">Todas las materias</option>' + subjects.map(s=>`<option ${s===cur?'selected':''}>${esc(s)}</option>`).join('');
+  sel.innerHTML = '<option value="">Todos los asuntos / temas / cursos</option>' + subjects.map(s=>`<option ${s===cur?'selected':''}>${esc(s)}</option>`).join('');
   $('#subjectsList').innerHTML = subjects.map(s=>`<option value="${esc(s)}">`).join('');
 
   if(view==='board'){
@@ -884,7 +884,7 @@ function localStamp(dt){ return dt.getFullYear()+pad(dt.getMonth()+1)+pad(dt.get
 function utcStamp(dt){ return dt.getUTCFullYear()+pad(dt.getUTCMonth()+1)+pad(dt.getUTCDate())+'T'+pad(dt.getUTCHours())+pad(dt.getUTCMinutes())+pad(dt.getUTCSeconds())+'Z'; }
 function details(c){
   const lines=[];
-  if(c.subject) lines.push('Materia: '+c.subject);
+  if(c.subject) lines.push('Asunto / Tema / Curso: '+c.subject);
   if(c.desc) lines.push(c.desc);
   if(c.checklist && c.checklist.length) lines.push('Checklist:\n'+c.checklist.map(i=>(i.done?'✔ ':'☐ ')+i.text).join('\n'));
   lines.push('— Mi Tablero');
@@ -1090,7 +1090,7 @@ function renderPreview(){
           <input type="text" class="t" data-f="title" value="${esc(o.title)}">
           <div class="l2">
             <input type="date" data-f="date" value="${o.date||''}">
-            <input type="text" class="s" data-f="subject" value="${esc(o.subject||'')}" placeholder="Materia" list="subjectsList">
+            <input type="text" class="s" data-f="subject" value="${esc(o.subject||'')}" placeholder="Asunto / Tema / Curso" list="subjectsList">
             <select data-f="col">${colOpts(resolveCol(o))}</select>
           </div>
           ${o.dup?'<span class="tag" style="background:var(--accent-2);color:inherit">Ya está en tu tablero</span>':''}${o.past && !o.dup?'<span class="tag">Fecha pasada</span>':''}
