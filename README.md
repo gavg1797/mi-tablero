@@ -47,10 +47,14 @@ App tipo Trello, ideal para el trabajo: organiza tus tareas, proyectos y cronogr
 - Proyecto de Google Cloud: **Mi Tablero** (`mi-tablero-515000`). Solo las cuentas agregadas como *usuarios de prueba* (Google Auth Platform → Público) pueden conectarse.
 
 ## Tareas que se repiten
-- En el editor de la tarea elige **Repetir**: cada semana, cada 15 días (quincenal), cada mes o cada año. Opcionalmente, **Hasta** qué fecha.
-- Al finalizar la tarea se crea sola la siguiente con su nueva fecha, en la columna que corresponde. Si la finalizas tarde, salta a la próxima fecha que aún no pasó. Si la desmarcas, la siguiente se quita.
+- En el editor de la tarea elige **Repetir**: cada día, cada semana, cada 15 días (quincenal), cada mes o cada año. Opcionalmente, **Hasta** qué fecha.
+- Al guardar se crean solas las siguientes repeticiones. Para que el tablero no se llene, esperan en la pestaña **Programadas**, agrupadas en diarias, semanales, quincenales, mensuales y anuales.
+- Cada repetición pasa sola al tablero, a la columna que le corresponde, cuando se acerca su fecha: las diarias el mismo día y las demás 7 días antes.
+- Siempre se mantienen creadas las de los próximos 3 meses (2 semanas para las diarias); con «Hasta», hasta esa fecha.
+- Al editar o eliminar una repetición puedes aplicarlo también a las siguientes. Si cambias la frecuencia, las siguientes se rehacen.
+- Las diarias que no se marcaron se quitan cuando llega la del día siguiente, para no acumularse.
 - Las mensuales respetan el día: una del 31 pasa al 30 o 28 en los meses cortos y vuelve al 31 cuando el mes lo tiene.
-- Al enviarla a Google Calendar o al .ics se agenda como evento repetitivo.
+- Al enviarla a Google Calendar o al .ics se agenda como un solo evento repetitivo.
 
 ## Importante: recordatorios y datos
 - **Recordatorios garantizados:** usa Google Calendar. Sus alertas llegan aunque la app esté cerrada, sin internet y en todos tus dispositivos.
