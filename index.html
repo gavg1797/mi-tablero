@@ -106,6 +106,26 @@ body.dragging{overflow:hidden}
 pre.example{background:var(--bg);border-radius:10px;padding:10px;font-size:13px;white-space:pre-wrap;margin:6px 0 10px}
 table.preview{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0}
 table.preview td,table.preview th{border-bottom:1px solid var(--line);padding:6px 4px;text-align:left}
+.drop{display:flex;flex-direction:column;align-items:center;gap:4px;border:2px dashed var(--accent);border-radius:14px;padding:22px 14px;text-align:center;cursor:pointer;background:var(--accent-2)}
+.drop span{font-size:13px;color:var(--muted)} .drop .drop-ico{font-size:30px;color:inherit}
+.drop.over{background:var(--accent);color:#fff} .drop.over span{color:#fff}
+.drop-overlay{position:fixed;inset:0;z-index:300;background:rgba(79,70,229,.85);color:#fff;display:none;align-items:center;justify-content:center;font-size:22px;font-weight:600;pointer-events:none}
+.drop-overlay.show{display:flex}
+.imp-sum{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.imp-sum .chip{font-size:12px;padding:3px 10px}
+.imp-opts{display:flex;flex-wrap:wrap;gap:10px;margin:6px 0 10px}
+.imp-opts .field{flex:1;min-width:180px;margin:0}
+.imp-list{border:1px solid var(--line);border-radius:12px;max-height:42vh;overflow:auto}
+.imp-row{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border-bottom:1px solid var(--line)}
+.imp-row:last-child{border-bottom:none}
+.imp-row.off{opacity:.45}
+.imp-row input[type=checkbox]{width:20px;height:20px;margin-top:6px;accent-color:var(--accent);flex:0 0 auto}
+.imp-row .r{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.imp-row .l2{display:flex;gap:6px;flex-wrap:wrap}
+.imp-row input[type=text],.imp-row input[type=date],.imp-row select{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:5px 7px;font-size:13px;min-width:0}
+.imp-row input.t{font-weight:600;font-size:14px;width:100%}
+.imp-row input[type=date]{flex:0 0 140px} .imp-row input.s{flex:1 1 110px} .imp-row select{flex:1 1 120px}
+.imp-row .tag{font-size:11px;border-radius:10px;padding:1px 7px;background:#fee2e2;color:#991b1b;align-self:flex-start}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#1b1d2e;color:#fff;padding:10px 16px;border-radius:12px;z-index:200;max-width:90vw;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.show{opacity:1}
 .fab{position:fixed;right:max(18px,env(safe-area-inset-right));bottom:calc(18px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:50%;border:none;background:var(--accent);color:#fff;box-shadow:0 6px 18px rgba(79,70,229,.45);display:grid;place-items:center;z-index:40}
@@ -123,8 +143,8 @@ table.preview td,table.preview th{border-bottom:1px solid var(--line);padding:6p
     <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#4f46e5"/><rect x="5" y="5" width="4" height="10" rx="1.2" fill="#fff"/><rect x="10" y="5" width="4" height="7" rx="1.2" fill="#fff"/><rect x="15" y="5" width="4" height="5" rx="1.2" fill="#fff"/></svg>
     <h1>Mi Tablero de Estudio</h1>
     <button class="icon-btn sync-btn" id="btnSync" title="Sincronizar con Google" aria-label="Sincronizar con Google"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 18a4.5 4.5 0 01-.6-8.96A6 6 0 0118 8.5a4 4 0 01-.5 9.5H7z"/></svg><i id="syncDot"></i></button>
-    <button class="btn ghost" id="btnImport" title="Importar cronograma">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg><span class="hide-sm">Cronograma</span></button>
+    <button class="btn ghost" id="btnImport" title="Cargar cronograma (Excel, Word, PDF…)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg><span class="hide-sm">Cargar cronograma</span></button>
     <button class="icon-btn" id="btnMenu" aria-label="Menú"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>
   </header>
   <div class="toolbar">
@@ -189,20 +209,23 @@ table.preview td,table.preview th{border-bottom:1px solid var(--line);padding:6p
 
 <!-- Importar cronograma -->
 <div class="overlay" id="ovImport"><div class="sheet">
-  <h2>Importar cronograma</h2>
-  <p class="hint">Pega tu cronograma, una tarea por línea. Formato: <b>fecha, hora (opcional) | tarea | materia</b>. Puedes separar con <b>|</b>, <b>;</b>, tabulador o <b>" - "</b> (copiar desde Excel funciona).</p>
-  <pre class="example">20/11 | Examen parcial | Cálculo
-22/11/2026 14:00 | Entregar ensayo | Español
-2026-11-25 - Leer capítulo 4 - Historia</pre>
-  <div class="field"><textarea id="impText" style="min-height:140px" placeholder="Pega aquí…"></textarea></div>
-  <div class="row">
-    <div class="field"><label for="impRemind">Recordatorio para todas</label>
-      <select id="impRemind"><option value="">Sin recordatorio</option><option value="60">1 hora antes</option><option value="1440" selected>1 día antes</option><option value="2880">2 días antes</option></select></div>
-    <div class="field"><label for="impCol">Enviar a</label><select id="impCol"><option value="auto">Automático por fecha</option></select></div>
-  </div>
+  <h2>Cargar cronograma</h2>
+  <label class="drop" id="impDrop">
+    <input type="file" id="impFile" accept=".xlsx,.xls,.xlsm,.ods,.csv,.tsv,.docx,.pdf,.txt,.md,text/plain,text/csv,application/pdf" hidden>
+    <span class="drop-ico">📄</span>
+    <b>Toca para elegir tu archivo</b>
+    <span>o arrástralo aquí · Excel, CSV, Word, PDF o texto</span>
+  </label>
+  <details id="impPasteBox"><summary class="hint" style="cursor:pointer;margin-top:10px">…o pega el texto del cronograma</summary>
+    <div class="field" style="margin-top:8px"><textarea id="impText" style="min-height:120px" placeholder="Ej:&#10;20/11 Examen parcial - Cálculo&#10;Lunes 24 de noviembre: Entregar ensayo (Español)"></textarea></div>
+    <button class="btn" id="impCheck">Analizar texto</button>
+  </details>
+  <div id="impStatus" class="hint"></div>
   <div id="impPreview"></div>
-  <div class="actions"><span class="spacer"></span><button class="btn" id="impCancel">Cancelar</button><button class="btn" id="impCheck">Vista previa</button><button class="btn primary" id="impDo" disabled>Importar</button></div>
+  <div class="actions"><span class="spacer"></span><button class="btn" id="impCancel">Cancelar</button><button class="btn primary" id="impDo" disabled>Importar</button></div>
 </div></div>
+
+<div class="drop-overlay" id="dropOverlay"><div>📄 Suelta tu cronograma para cargarlo</div></div>
 
 <!-- Menú -->
 <div class="overlay" id="ovMenu"><div class="sheet">
@@ -213,7 +236,7 @@ table.preview td,table.preview th{border-bottom:1px solid var(--line);padding:6p
     <button id="mInstall">📲<span>Instalar en el celular<small>Agregar a la pantalla de inicio</small></span></button>
     <button id="mIcsAll">📅<span>Exportar tareas pendientes a calendario (.ics)<small>Importa todo a Google Calendar de una vez, con alarmas</small></span></button>
     <button id="mColumns">🗂️<span>Editar columnas<small>Renombrar, agregar o quitar</small></span></button>
-    <button id="mAutoWeek">🗓️<span>Mover automáticamente a “Esta semana”<small id="mAutoWeekState"></small></span></button>
+    <button id="mAutoWeek">🗓️<span>Organizar automáticamente por fecha<small id="mAutoWeekState"></small></span></button>
     <button id="mBackup">💾<span>Descargar respaldo<small>Para guardar o pasar a otro dispositivo</small></span></button>
     <button id="mRestore">♻️<span>Restaurar respaldo<small>Cargar un archivo .json</small></span></button>
     <button id="mClearDone">🧹<span>Borrar tareas finalizadas</span></button>
@@ -249,6 +272,7 @@ table.preview td,table.preview th{border-bottom:1px solid var(--line);padding:6p
 
 <div class="toast" id="toast"></div>
 
+<script src="importer.js"></script>
 <script>
 (function(){
 'use strict';
@@ -425,7 +449,7 @@ function updateBanner(){
   const late = pending.filter(c=>endOfDue(c) < new Date()).length;
   const today = pending.filter(c=>daysUntil(c)===0 && endOfDue(c) >= new Date()).length;
   const b = $('#banner');
-  if(!state.cards.length){ b.innerHTML = '👋 Empieza con <b>+</b> o importa tu cronograma con <b>Cronograma</b>.'; b.classList.add('show'); return; }
+  if(!state.cards.length){ b.innerHTML = '👋 Empieza con <b>+</b> o carga tu cronograma (Excel, Word, PDF) con el botón <b>⬇ Cargar cronograma</b>, o arrastra el archivo aquí.'; b.classList.add('show'); return; }
   const parts=[]; if(today) parts.push(`<b>${today}</b> para hoy`); if(late) parts.push(`<b style="color:var(--bad)">${late}</b> vencida${late>1?'s':''}`);
   b.innerHTML = parts.length ? '📌 Tienes '+parts.join(' y ')+'.' : '';
   b.classList.toggle('show', parts.length>0);
@@ -450,15 +474,28 @@ function moveCard(c, colId, index){
   others.forEach((x,i)=>x.order=i);
   if(!wasDone && c.done) toast('¡Tarea finalizada! ✅');
 }
+// Columna que corresponde según la fecha de hoy
+const RANK = {pend:0, semana:1, prog:2};
+function targetColFor(c){
+  if(c.done || c.status==='done') return doneCol().id;
+  const has = id => !!colById(id);
+  if(c.status==='prog' && has('prog')) return 'prog';
+  const n = c.date ? daysUntil(c) : null;
+  if(n===null) return has('pend') ? 'pend' : firstCol().id;
+  if(n<=0 && has('prog')) return 'prog';          // hoy o vencida → En progreso
+  if(n<=7 && has('semana')) return 'semana';      // próximos 7 días → Esta semana
+  return has('pend') ? 'pend' : firstCol().id;    // más adelante → Pendientes
+}
+// Avanza las tareas de columna a medida que se acercan sus fechas (nunca las regresa)
 function autoWeek(){
   if(!state.settings.autoWeek) return false;
-  const pend = state.columns.find(c=>c.id==='pend'), sem = state.columns.find(c=>c.id==='semana');
-  if(!pend || !sem) return false;
-  let moved=0;
+  let moved = 0;
   for(const c of state.cards){
-    if(c.col==='pend' && !c.done && c.date){ const n=daysUntil(c); if(n!==null && n<=7){ c.col='semana'; c.order=maxOrder('semana')+1; moved++; } }
+    if(c.done || !c.date || !(c.col in RANK)) continue;
+    const t = targetColFor(c);
+    if(t in RANK && RANK[t] > RANK[c.col]){ c.col = t; c.order = -1; moved++; }
   }
-  return moved>0;
+  return moved > 0;
 }
 
 /* Delegación de clics */
@@ -687,7 +724,7 @@ function refreshNotifLabel(){
   else if(Notification.permission==='granted' && state.settings.notify) el.textContent = 'Activadas ✓ (toca para probar)';
   else if(Notification.permission==='denied') el.textContent = 'Bloqueadas: actívalas en los ajustes del navegador';
   else el.textContent = 'Avisos en este dispositivo';
-  $('#mAutoWeekState').textContent = state.settings.autoWeek ? 'Activado: las tareas a 7 días o menos pasan solas' : 'Desactivado';
+  $('#mAutoWeekState').textContent = state.settings.autoWeek ? 'Activado: hoy/vencidas → En progreso · 7 días → Esta semana' : 'Desactivado';
 }
 async function sysNotify(title, body, tag){
   if(!(notifSupported() && Notification.permission==='granted' && state.settings.notify)) return false;
@@ -719,58 +756,141 @@ function checkReminders(){
   if(changed) save();
 }
 
-/* ---------- Importar cronograma ---------- */
-let parsed = [];
-function guessYear(m,d){
-  const t=new Date(); let y=t.getFullYear();
-  const cand=new Date(y,m-1,d); if(t - cand > 60*86400000) y++;
-  return y;
+/* ---------- Cargar cronograma (lector inteligente) ---------- */
+const nrm = x => String(x||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+const keyOf = c => nrm(c.title)+'|'+(c.date||'');
+function smartRemind(title){
+  const t = nrm(title);
+  if(/examen|parcial|quiz|prueba|evaluacion|test\b|exposicion|presentacion|defensa|final\b|comprobacion/.test(t)) return '2880';
+  return '1440';
 }
-function parseLine(raw){
-  let line = raw.trim(); if(!line) return null;
-  let date='', time='', m;
-  if((m = line.match(/(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/))){ date = `${m[1]}-${pad(m[2])}-${pad(m[3])}`; line=line.replace(m[0],' '); }
-  else if((m = line.match(/(\d{1,2})[\/\.-](\d{1,2})(?:[\/\.-](\d{2,4}))?(?!\d)/))){
-    const d=+m[1], mo=+m[2]; if(mo>=1&&mo<=12&&d>=1&&d<=31){ const y = m[3] ? (m[3].length===2?'20'+m[3]:m[3]) : guessYear(mo,d); date=`${y}-${pad(mo)}-${pad(d)}`; line=line.replace(m[0],' '); }
-  }
-  if((m = line.match(/(\d{1,2})[:h](\d{2})\s*(a\.?\s?m\.?|p\.?\s?m\.?)?/i))){
-    let h=+m[1]; const mi=+m[2]; const ap=(m[3]||'').toLowerCase().replace(/[\.\s]/g,'');
-    if(ap==='pm' && h<12) h+=12; if(ap==='am' && h===12) h=0;
-    if(h<24 && mi<60){ time=`${pad(h)}:${pad(mi)}`; line=line.replace(m[0],' '); }
-  }
-  const parts = line.split(/\s*[|;\t]\s*|\s+[-–—]\s+|^\s*[-–—]\s*|\s*,\s+(?=[^,]*$)/).map(s=>s.trim().replace(/^[-–—:,]+|[-–—:,]+$/g,'').trim()).filter(Boolean);
-  if(!parts.length) return null;
-  return {title: parts[0], subject: parts[1]||'', date, time, desc: parts.slice(2).join(' · ')};
+let impItems = [], impSource = '';
+function setImpStatus(html){ $('#impStatus').innerHTML = html; }
+function subjectsKnown(){ return [...new Set(state.cards.map(c=>c.subject).filter(Boolean))]; }
+async function analyzeFile(file){
+  if(!file) return;
+  show('#ovImport');
+  $('#impPreview').innerHTML=''; $('#impDo').disabled = true;
+  setImpStatus('⏳ Leyendo <b>'+esc(file.name)+'</b>…');
+  try{
+    if(!window.SmartImport) throw new Error('El lector no está disponible. Revisa tu conexión y recarga la app.');
+    const items = await SmartImport.readFile(file, {knownSubjects: subjectsKnown()});
+    impSource = file.name; showPreview(items);
+  }catch(e){ setImpStatus('⚠️ '+esc(e.message||String(e))); }
 }
-$('#impCheck').onclick = ()=>{
-  parsed = $('#impText').value.split(/\r?\n/).map(parseLine).filter(Boolean);
+function showPreview(items){
+  const existing = new Set(state.cards.map(keyOf)), seen = new Set(), today = todayStr();
+  impItems = items.map(it=>{
+    const o = Object.assign({id:uid(), include:true, colOverride:''}, it);
+    const k = keyOf(o);
+    o.dup = existing.has(k) || seen.has(k); seen.add(k);
+    if(o.dup) o.include = false;
+    o.past = !!(o.date && o.date < today && o.status!=='done');
+    return o;
+  });
+  renderPreview();
+}
+function resolveCol(o){
+  if(o.colOverride && colById(o.colOverride)) return o.colOverride;
+  if(o.status==='done') return doneCol().id;
+  const pm = ($('#impPast') && $('#impPast').value) || 'done';
+  if(o.past && pm==='done') return doneCol().id;
+  return targetColFor({date:o.date, time:o.time, status:o.status, done:false});
+}
+function renderPreview(){
   const box = $('#impPreview');
-  if(!parsed.length){ box.innerHTML='<p class="hint">No encontré tareas. Revisa el formato del ejemplo.</p>'; $('#impDo').disabled=true; return; }
-  box.innerHTML = `<table class="preview"><tr><th>Fecha</th><th>Tarea</th><th>Materia</th></tr>${parsed.map(p=>`<tr><td>${p.date?esc(fmtDue(p)):'<i>sin fecha</i>'}</td><td>${esc(p.title)}</td><td>${esc(p.subject)}</td></tr>`).join('')}</table>`;
-  $('#impDo').disabled=false;
+  if(!impItems.length){
+    setImpStatus('🤔 No encontré tareas con fecha en <b>'+esc(impSource)+'</b>. Asegúrate de que cada tarea tenga una fecha (por ejemplo 20/11 o “20 de noviembre”).');
+    box.innerHTML=''; $('#impDo').disabled=true; return;
+  }
+  const pastN = impItems.filter(o=>o.past).length;
+  const prevPast = $('#impPast') ? $('#impPast').value : 'done';
+  const prevRem = $('#impRemind') ? $('#impRemind').value : 'smart';
+  const active = impItems.filter(o=>o.include && !(o.past && prevPast==='skip'));
+  const counts = {}; active.forEach(o=>{ const c=resolveCol(o); counts[c]=(counts[c]||0)+1; });
+  const dups = impItems.filter(o=>o.dup).length, nodate = impItems.filter(o=>!o.date).length;
+  setImpStatus('✅ Encontré <b>'+impItems.length+'</b> tareas en <b>'+esc(impSource)+'</b>. Revisa y corrige lo que quieras antes de importar.');
+  const colOpts = sel => state.columns.map(c=>`<option value="${c.id}" ${c.id===sel?'selected':''}>${esc(c.name)}</option>`).join('');
+  box.innerHTML = `
+    <div class="imp-sum">${state.columns.filter(c=>counts[c.id]).map(c=>`<span class="chip ${c.done?'okc':''}">${esc(c.name)}: <b>${counts[c.id]}</b></span>`).join('')}
+      ${nodate?`<span class="chip">Sin fecha: ${nodate}</span>`:''}${dups?`<span class="chip">Ya existían: ${dups}</span>`:''}</div>
+    <div class="imp-opts">
+      <div class="field"><label for="impRemind">Recordatorios</label>
+        <select id="impRemind"><option value="smart">Inteligentes (exámenes 2 días antes, resto 1 día)</option><option value="">Sin recordatorio</option><option value="60">1 hora antes</option><option value="1440">1 día antes</option><option value="2880">2 días antes</option></select></div>
+      ${pastN?`<div class="field"><label for="impPast">Tareas con fecha ya pasada (${pastN})</label>
+        <select id="impPast"><option value="done">Marcarlas como finalizadas</option><option value="late">Dejarlas como vencidas (En progreso)</option><option value="skip">No importarlas</option></select></div>`:''}
+    </div>
+    <div class="imp-list">${impItems.map((o,i)=>`
+      <div class="imp-row ${o.include && !(o.past && prevPast==='skip')?'':'off'}" data-i="${i}">
+        <input type="checkbox" data-f="include" ${o.include?'checked':''} aria-label="Incluir">
+        <div class="r">
+          <input type="text" class="t" data-f="title" value="${esc(o.title)}">
+          <div class="l2">
+            <input type="date" data-f="date" value="${o.date||''}">
+            <input type="text" class="s" data-f="subject" value="${esc(o.subject||'')}" placeholder="Materia" list="subjectsList">
+            <select data-f="col">${colOpts(resolveCol(o))}</select>
+          </div>
+          ${o.dup?'<span class="tag" style="background:var(--accent-2);color:inherit">Ya está en tu tablero</span>':''}${o.past && !o.dup?'<span class="tag">Fecha pasada</span>':''}
+        </div>
+      </div>`).join('')}</div>`;
+  $('#impRemind').value = prevRem;
+  if($('#impPast')) $('#impPast').value = prevPast;
+  const n = active.length;
+  $('#impDo').disabled = n===0; $('#impDo').textContent = n ? `Importar ${n} tarea${n>1?'s':''}` : 'Importar';
+}
+$('#impPreview').addEventListener('change', e=>{
+  if(e.target.id==='impPast' || e.target.id==='impRemind'){ impItems.forEach(o=>{ if(e.target.id==='impPast') o.colOverride=''; }); renderPreview(); return; }
+  const row = e.target.closest('.imp-row'); if(!row) return; const o = impItems[+row.dataset.i]; const f = e.target.dataset.f;
+  if(f==='include') o.include = e.target.checked;
+  else if(f==='col') o.colOverride = e.target.value;
+  else if(f==='date'){ o.date = e.target.value; o.past = !!(o.date && o.date < todayStr() && o.status!=='done'); o.colOverride=''; }
+  else o[f] = e.target.value.trim();
+  renderPreview();
+});
+$('#impCheck').onclick = ()=>{
+  const t = $('#impText').value.trim(); if(!t) return toast('Pega primero el texto del cronograma');
+  impSource = 'el texto pegado';
+  try{ showPreview(SmartImport.readPasted(t, {knownSubjects: subjectsKnown()})); }catch(e){ setImpStatus('⚠️ '+esc(e.message)); }
 };
-$('#impText').addEventListener('input', ()=>{ $('#impDo').disabled=true; });
+$('#impFile').addEventListener('change', e=>{ const f=e.target.files[0]; e.target.value=''; analyzeFile(f); });
+const dz = $('#impDrop');
+['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev, e=>{ e.preventDefault(); dz.classList.add('over'); }));
+['dragleave','drop'].forEach(ev=>dz.addEventListener(ev, e=>{ e.preventDefault(); dz.classList.remove('over'); }));
+dz.addEventListener('drop', e=>{ e.stopPropagation(); $('#dropOverlay').classList.remove('show'); analyzeFile(e.dataTransfer.files[0]); });
+// Arrastrar un archivo a cualquier parte de la app
+let dragDepth = 0;
+const hasFiles = e => e.dataTransfer && [...(e.dataTransfer.types||[])].includes('Files');
+window.addEventListener('dragenter', e=>{ if(!hasFiles(e)) return; e.preventDefault(); dragDepth++; $('#dropOverlay').classList.add('show'); });
+window.addEventListener('dragover', e=>{ if(hasFiles(e)) e.preventDefault(); });
+window.addEventListener('dragleave', e=>{ if(!hasFiles(e)) return; dragDepth=Math.max(0,dragDepth-1); if(!dragDepth) $('#dropOverlay').classList.remove('show'); });
+window.addEventListener('drop', e=>{ if(!hasFiles(e)) return; e.preventDefault(); dragDepth=0; $('#dropOverlay').classList.remove('show'); analyzeFile(e.dataTransfer.files[0]); });
+
 $('#impDo').onclick = ()=>{
-  const remind = $('#impRemind').value, colSel = $('#impCol').value;
-  for(const p of parsed){
-    let col = colSel;
-    if(col==='auto'){
-      const n = p.date ? daysUntil(p) : null;
-      col = (n!==null && n<=7 && colById('semana')) ? 'semana' : firstCol().id;
-    }
-    const c = Object.assign({id:uid(), created:Date.now(), done:false, remind: p.date?remind:'', checklist:[], notified:{}}, p, {col, order: maxOrder(col)+1});
-    state.cards.push(c);
+  const rem = $('#impRemind').value, pm = $('#impPast') ? $('#impPast').value : 'done';
+  const added = []; const counts = {};
+  for(const o of impItems){
+    if(!o.include || !o.title || (o.past && pm==='skip')) continue;
+    const col = resolveCol(o); const done = !!(colById(col) && colById(col).done);
+    const c = {id:uid(), created:Date.now(), title:o.title, subject:o.subject||'', date:o.date||'', time:o.time||'', desc:o.desc||'',
+      checklist:[], notified:{}, done, col, order: -1 - added.length,
+      remind: o.date ? (rem==='smart' ? smartRemind(o.title) : rem) : ''};
+    if(done) c.completedAt = Date.now();
+    if(o.past && !done) c.notified = {[c.date+'|'+c.time+'|'+c.remind]: true};
+    state.cards.push(c); added.push(c); counts[col]=(counts[col]||0)+1;
+  }
+  // reordena cada columna por fecha para que quede todo ordenado
+  for(const col of Object.keys(counts)){
+    state.cards.filter(c=>c.col===col).sort((a,b)=>(a.date||'9999')<(b.date||'9999')?-1:(a.date||'9999')>(b.date||'9999')?1:(a.time||'').localeCompare(b.time||'')).forEach((c,i)=>c.order=i);
   }
   save(); closeAll(); render();
-  toast(`Se importaron ${parsed.length} tareas`);
-  confirmBox('¿Agregarlas a Google Calendar?', 'Puedo descargar un archivo .ics con todas las tareas y sus alarmas. Luego lo abres o lo importas en Google Calendar (calendar.google.com → Configuración → Importar).', ()=>{
-    download('cronograma.ics', buildIcs(state.cards.filter(c=>parsed.some(p=>p.title===c.title && p.date===c.date) && c.date)), 'text/calendar');
+  const sum = state.columns.filter(c=>counts[c.id]).map(c=>`${c.name}: ${counts[c.id]}`).join(' · ');
+  toast(`Se importaron ${added.length} tareas · ${sum}`);
+  const pend = added.filter(c=>!c.done && c.date);
+  if(pend.length) confirmBox('¿Agregarlas a Google Calendar?', `Puedo descargar un archivo de calendario con las <b>${pend.length}</b> tareas pendientes y sus recordatorios. Luego lo abres en el celular o lo importas en calendar.google.com → Configuración → Importar.`, ()=>{
+    download('cronograma.ics', buildIcs(pend), 'text/calendar');
   }, 'Descargar .ics');
 };
-$('#btnImport').onclick = ()=>{
-  $('#impCol').innerHTML = '<option value="auto">Automático por fecha</option>' + state.columns.filter(c=>!c.done).map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
-  $('#impPreview').innerHTML=''; $('#impDo').disabled=true; show('#ovImport');
-};
+$('#btnImport').onclick = ()=>{ $('#impPreview').innerHTML=''; setImpStatus(''); $('#impDo').disabled=true; $('#impDo').textContent='Importar'; show('#ovImport'); };
 $('#impCancel').onclick = closeAll;
 
 /* ---------- Menú ---------- */
@@ -785,7 +905,7 @@ $('#mNotif').onclick = async ()=>{
   if(p==='granted'){ sysNotify('🔔 Notificaciones activadas','Te avisaré de tus tareas mientras la app esté abierta o en segundo plano.','test'); }
   else toast('Permiso no concedido');
 };
-$('#mAutoWeek').onclick = ()=>{ state.settings.autoWeek = !state.settings.autoWeek; if(autoWeek()) toast('Tareas movidas a “Esta semana”'); save(); refreshNotifLabel(); render(); };
+$('#mAutoWeek').onclick = ()=>{ state.settings.autoWeek = !state.settings.autoWeek; if(autoWeek()) toast('Tareas reorganizadas según la fecha de hoy'); save(); refreshNotifLabel(); render(); };
 $('#mIcsAll').onclick = ()=>{ const list = state.cards.filter(c=>!c.done && c.date); if(!list.length) return toast('No hay tareas pendientes con fecha'); download('mis-tareas.ics', buildIcs(list), 'text/calendar'); };
 $('#mBackup').onclick = ()=>download('respaldo-mi-tablero-'+todayStr()+'.json', JSON.stringify(state,null,1), 'application/json');
 $('#mRestore').onclick = ()=>$('#fileRestore').click();
@@ -1040,7 +1160,7 @@ checkReminders();
 setInterval(()=>{ checkReminders(); }, 30000);
 setInterval(()=>{ if(!drag && !document.querySelector('.overlay.show')) render(); }, 5*60000);
 // Para pruebas
-window.__tablero = {get state(){return state;}, parseLine, buildIcs, gcalUrl, mergeStates, migrate};
+window.__tablero = {get state(){return state;}, buildIcs, gcalUrl, mergeStates, migrate, targetColFor, showPreview, analyzeFile};
 })();
 </script>
 </body>

@@ -1,9 +1,10 @@
 // Service worker: guarda la app en el dispositivo para que funcione sin internet.
-const CACHE = 'mi-tablero-v3';
+const CACHE = 'mi-tablero-v4';
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
+  './importer.js',
   './icon-192.png',
   './icon-512.png',
   './maskable-512.png',

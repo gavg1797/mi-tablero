@@ -51,6 +51,25 @@ App tipo Trello para organizar tus tareas de estudio. Es gratis, no tiene anunci
 - **Tus datos** se guardan en el dispositivo y, si conectas Google, también en tu Drive (gratis). Igual puedes descargar un respaldo en *Opciones*.
 - Si borras los datos de navegación del navegador, se borran las tareas. Por eso conviene tener un respaldo.
 
+## Cargar tu cronograma (lectura inteligente)
+Toca **⬇ Cargar cronograma** (o arrastra el archivo a la app) y elige tu archivo:
+- **Excel** (.xlsx, .xls, .ods) y **CSV**: reconoce las columnas por su encabezado (Fecha, Curso/Materia, Actividad/Tema, Hora, Estado…). Si no hay encabezados, las deduce. Respeta las celdas combinadas y usa el nombre de cada hoja como materia.
+- **Word** (.docx): lee tablas, listas y párrafos. Los títulos se usan como materia.
+- **PDF** con texto (no escaneado): reconstruye renglones y columnas.
+- **Texto** pegado o .txt.
+
+Entiende fechas como `20/11`, `20/11/2026`, `2026-11-20`, `20 de noviembre`, `vie 21 nov`, `Nov 20`, rangos (`17 al 21 de noviembre`) y horas (`14:00`, `2 pm`, `3:00 p.m.`). Si una fila dice *Entregado/Hecho/✔* va a **Finalizado**; si dice *En progreso*, va a **En progreso**.
+
+**Ubicación automática según la fecha de hoy:**
+| Fecha | Columna |
+|---|---|
+| Hoy o ya vencida | En progreso |
+| Próximos 7 días | Esta semana |
+| Más adelante | Pendientes |
+| Marcada como hecha (o fecha pasada, si eliges “marcarlas como finalizadas”) | Finalizado |
+
+Cada día, al abrir la app, las tareas avanzan solas de columna a medida que se acercan sus fechas. Antes de importar ves una vista previa donde puedes corregir el nombre, la fecha, la materia o la columna. Las tareas que ya tienes no se duplican. Los recordatorios inteligentes avisan 2 días antes de los exámenes y 1 día antes del resto.
+
 ## Formato del cronograma
 ```
 20/11 | Examen parcial | Cálculo
