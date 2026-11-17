@@ -50,6 +50,7 @@ App tipo Trello, ideal para el trabajo: organiza tus tareas, proyectos y cronogr
 - Cada tarea con fecha se copia sola al calendario **«Mi Tablero»** del Google Calendar de la cuenta con la que entras, con su hora, recordatorios y repetición (diaria, semanal, quincenal, mensual o anual, y su «Hasta»).
 - Los cambios se actualizan solos: editar, finalizar (aparece con ✅), borrar una tarea o una sola repetición.
 - La app solo puede ver y cambiar ese calendario: no ve tus otros calendarios (permiso `calendar.app.created`, no requiere verificación de Google).
+- Para abrirlo desde la app: el ícono 📅 junto a la nube (en el celular, el botón **📅 Calendario** junto a tu correo), o el menú ☰ → **Abrir Google Calendar**. Abre Google Calendar con la cuenta de la sesión y el calendario «Mi Tablero».
 - Se desactiva por dispositivo en **Opciones → Google Calendar automático**.
 - La primera vez que entres después de esta actualización, Google te pedirá permiso para el calendario.
 
