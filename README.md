@@ -1,6 +1,6 @@
-# Mi Tablero de Estudio
+# Mi Tablero
 
-App tipo Trello para organizar tus tareas de estudio. Es gratis, no tiene anuncios y funciona sin internet.
+App tipo Trello, ideal para el trabajo: organiza tus tareas, proyectos y cronogramas. Es gratis, no tiene anuncios y funciona sin internet.
 
 ## Qué hace
 - **Columnas:** Pendientes → Esta semana → En progreso → Finalizado (puedes renombrarlas, agregar más o cambiarlas de orden).

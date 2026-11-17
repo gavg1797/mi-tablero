@@ -1,4 +1,4 @@
-/* Lector inteligente de cronogramas — Mi Tablero de Estudio
+/* Lector inteligente de cronogramas — Mi Tablero
    Entiende Excel (.xlsx/.xls/.ods), CSV, Word (.docx), PDF y texto.
    Devuelve tareas con: title, subject, date (AAAA-MM-DD), time (HH:MM), status ('done'|'prog'|''), desc. */
 (function(){

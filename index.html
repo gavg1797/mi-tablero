@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Mi Tablero de Estudio</title>
+<title>Mi Tablero</title>
 <meta name="theme-color" content="#4f46e5">
-<meta name="description" content="Tablero de tareas de estudio con checklist, recordatorios y Google Calendar. Funciona sin internet.">
+<meta name="description" content="Mi Tablero: tablero de tareas ideal para el trabajo, con checklist, recordatorios y Google Calendar. Funciona sin internet.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -194,7 +194,7 @@ table.preview td,table.preview th{border-bottom:1px solid var(--line);padding:6p
 <div class="app">
   <header>
     <button class="icon-btn" id="btnDrawer" aria-label="Abrir menú de tableros"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button>
-    <div class="brand"><span class="eyebrow">Mi Tablero de Estudio</span><h1 id="boardTitle" title="Cambiar de tablero">Mi Tablero</h1></div>
+    <div class="brand"><span class="eyebrow">Ideal para el trabajo</span><h1 id="boardTitle" title="Cambiar de tablero">Mi Tablero</h1></div>
     <button class="icon-btn sync-btn" id="btnSync" title="Sincronizar con Google" aria-label="Sincronizar con Google"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 18a4.5 4.5 0 01-.6-8.96A6 6 0 0118 8.5a4 4 0 01-.5 9.5H7z"/></svg><i id="syncDot"></i></button>
     <button class="btn ghost" id="btnImport" title="Cargar cronograma (Excel, Word, PDF…)">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg><span class="hide-sm">Cargar cronograma</span></button>
@@ -219,7 +219,7 @@ table.preview td,table.preview th{border-bottom:1px solid var(--line);padding:6p
 <!-- Barra de menú: tableros -->
 <div class="scrim" id="scrim"></div>
 <aside class="drawer" id="drawer" aria-label="Menú de tableros">
-  <div class="drawer-head"><span class="eyebrow">Mi Tablero de Estudio</span><button class="icon-btn" id="drawerClose" aria-label="Cerrar menú">✕</button></div>
+  <div class="drawer-head"><span class="eyebrow">Mi Tablero · Ideal para el trabajo</span><button class="icon-btn" id="drawerClose" aria-label="Cerrar menú">✕</button></div>
   <div class="drawer-title">Tus tableros</div>
   <div class="dsec" style="border-top:none;padding-top:0">
     <div class="blist" id="boardList"></div>
@@ -356,10 +356,10 @@ table.preview td,table.preview th{border-bottom:1px solid var(--line);padding:6p
 <!-- Bienvenida -->
 <div class="overlay" id="ovWelcome"><div class="sheet">
   <span class="eyebrow">Bienvenido a</span>
-  <h2 style="font-size:38px;margin:2px 0 10px">Mi Tablero de Estudio</h2>
-  <p style="margin:0 0 14px;color:var(--muted)">Organiza tus tareas de estudio en columnas, gratis y sin crear cuentas. Funciona sin internet.</p>
+  <h2 style="font-size:38px;margin:2px 0 10px">Mi Tablero</h2>
+  <p style="margin:0 0 14px;color:var(--muted)">Ideal para el trabajo: organiza tus tareas y proyectos en columnas, gratis y sin crear cuentas. Funciona sin internet.</p>
   <div class="steps">
-    <div><b>1</b><span><b>Carga tu cronograma</b> (Excel, Word, PDF o texto). La app entiende fechas, sesiones y materias y acomoda cada tarea según la fecha de hoy.</span></div>
+    <div><b>1</b><span><b>Carga tu cronograma o lista de tareas</b> (Excel, Word, PDF o texto). La app entiende fechas, sesiones y proyectos y acomoda cada tarea según la fecha de hoy.</span></div>
     <div><b>2</b><span><b>Marca con ✓</b> lo que terminas y arrastra las tareas entre columnas (en el celular, mantén presionada la tarjeta).</span></div>
     <div><b>3</b><span><b>Conecta Google</b> (☁️, opcional) para tener tus tableros en todos tus dispositivos y pasar fechas a Google Calendar.</span></div>
     <div><b>4</b><span><b>Instálala</b>: en iPhone, Compartir → “Agregar a pantalla de inicio”; en Android, menú ⋮ → “Instalar app”.</span></div>
@@ -805,7 +805,7 @@ function details(c){
   if(c.subject) lines.push('Materia: '+c.subject);
   if(c.desc) lines.push(c.desc);
   if(c.checklist && c.checklist.length) lines.push('Checklist:\n'+c.checklist.map(i=>(i.done?'✔ ':'☐ ')+i.text).join('\n'));
-  lines.push('— Mi Tablero de Estudio');
+  lines.push('— Mi Tablero');
   return lines.join('\n\n');
 }
 function gcalUrl(c){
@@ -822,7 +822,7 @@ function gcalUrl(c){
 function icsEsc(s){ return String(s).replace(/\\/g,'\\\\').replace(/\n/g,'\\n').replace(/,/g,'\\,').replace(/;/g,'\\;'); }
 function fold(line){ const out=[]; while(line.length>73){ out.push(line.slice(0,73)); line=' '+line.slice(73); } out.push(line); return out.join('\r\n'); }
 function buildIcs(cards){
-  const L = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Mi Tablero de Estudio//ES','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
+  const L = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Mi Tablero//ES','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
   const now = utcStamp(new Date());
   for(const c of cards){
     if(!c.date) continue;
@@ -1395,7 +1395,7 @@ function boardCount(id){
 function renderBoardChrome(){
   const cb = curBoard();
   $('#boardTitle').textContent = cb.name;
-  document.title = cb.name + ' · Mi Tablero de Estudio';
+  document.title = cb.name + ' · Mi Tablero';
   $('#boardList').innerHTML = boards.list.map(b=>`<div class="bitem ${b.id===boardId?'cur':''}" data-bid="${b.id}">
       <span class="bdot" style="background:${esc(b.color||'#476adb')}"></span>
       <button class="bn" data-bact="go" title="Abrir aquí">${esc(b.name)}</button>
@@ -1572,7 +1572,7 @@ document.addEventListener('keydown', e=>{
 const APP_URL = location.origin + location.pathname;
 $('#dShareApp').onclick = async ()=>{
   closeDrawer();
-  const data = {title:'Mi Tablero de Estudio', text:'Organiza tus tareas de estudio: carga tu cronograma y la app lo acomoda solo. Gratis y funciona sin internet.', url: APP_URL};
+  const data = {title:'Mi Tablero', text:'Mi Tablero, ideal para el trabajo: organiza tus tareas en columnas y carga tu cronograma para que la app lo acomode solo. Gratis y funciona sin internet.', url: APP_URL};
   try{ if(navigator.share){ await navigator.share(data); return; } }catch(e){ if(e && e.name==='AbortError') return; }
   try{ await navigator.clipboard.writeText(APP_URL); toast('Enlace copiado: '+APP_URL); }
   catch(e){ showInfo('Comparte este enlace', `<p>Envía esta dirección a quien quieras:</p><input value="${esc(APP_URL)}" readonly style="width:100%;padding:10px;border:1px solid var(--line);border-radius:10px" onclick="this.select()">`); }
