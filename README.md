@@ -42,6 +42,7 @@ App tipo Trello, ideal para el trabajo: organiza tus tareas, proyectos y cronogr
 - App publicada en: https://gavg1797.github.io/mi-tablero/
 - Toca la **nube ☁️** arriba → **Conectar con Google** → elige tu cuenta. Como la app está en modo "Prueba", Google mostrará el aviso *"Google no verificó esta app"*: toca **Continuar** (es tu propia app).
 - Tus tareas se guardan en una carpeta oculta y privada de tu Google Drive y se combinan entre todos tus dispositivos. Sin internet sigues trabajando; al volver la conexión se sincroniza solo.
+- **En vivo:** cada cambio se sube a Google al instante, y los demás dispositivos conectados a la misma cuenta lo reciben en unos segundos (aparece «Actualizado desde otro dispositivo»). Si dos personas editan a la vez, se conservan los cambios de ambas; en una misma tarea gana el último guardado.
 - Si la nube se pone naranja, la sesión de Google expiró (pasa más o menos cada hora): tócala para reconectar.
 - Proyecto de Google Cloud: **Mi Tablero** (`mi-tablero-515000`). Solo las cuentas agregadas como *usuarios de prueba* (Google Auth Platform → Público) pueden conectarse.
 

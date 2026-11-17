@@ -1374,8 +1374,8 @@ function mergeStates(local, remote){
     settings:Object.assign({}, local.settings, {autoWeek:autoW})};
 }
 function forCloud(st){ const c = JSON.parse(JSON.stringify(st)); delete c.settings.notify; c.cards.forEach(x=>delete x.notified); return c; }
-function scheduleSync(){ if(!isConnected()) return; clearTimeout(syncTimer); syncTimer = setTimeout(()=>syncNow(false), 2500); }
-async function syncNow(interactive){
+function scheduleSync(){ if(!isConnected()) return; clearTimeout(syncTimer); syncTimer = setTimeout(()=>syncNow(false), 300); }
+async function syncNow(interactive, fromLive){
   if(boardRemoved) return;
   if(!clientId()){ if(interactive) openSync(); return; }
   if(!isConnected() && !interactive) return;
@@ -1407,7 +1407,9 @@ async function syncNow(interactive){
     if(!remote || JSON.stringify(cloud) !== JSON.stringify(forCloud(migrate(remote)))) id = await driveWrite(id, cloud, FILE_NAME);
     sync.fileIds[boardId] = id; sync.lastSync = Date.now(); saveSync();
     await syncIndex();
-    if(JSON.stringify(state) !== before && !drag && !document.querySelector('#ovCard.show')) render();
+    const changed = JSON.stringify(state) !== before;
+    if(changed && !drag && !document.querySelector('#ovCard.show')) render();
+    if(changed && fromLive) toast('Actualizado desde otro dispositivo');
     setSyncStatus('ok');
     if(interactive) toast('Sincronizado con Google ✓');
   }catch(e){
@@ -1417,6 +1419,28 @@ async function syncNow(interactive){
     syncing = false;
     if(again){ again = false; setTimeout(()=>syncNow(false), 800); }
   }
+}
+/* ---------- En vivo: recibe al instante lo que se guarda en otros dispositivos ----------
+   Cada pocos segundos pregunta a Google Drive si algún archivo de la app cambió (una consulta muy liviana).
+   Si cambió, descarga y combina los cambios sin interrumpir lo que se está editando. */
+const LIVE_MS = 4000;
+let liveTok = null, liveBusy = false;
+async function liveCheck(){
+  if(liveBusy || locked || boardRemoved || document.hidden || !navigator.onLine || !isConnected() || !tokenValid()) return;
+  if(!sync.owner || sync.whoTok !== sync.token) return;
+  liveBusy = true;
+  try{
+    if(!liveTok){ const r = await gfetch('https://www.googleapis.com/drive/v3/changes/startPageToken'); liveTok = (await r.json()).startPageToken; return; }
+    let tok = liveTok, any = false;
+    for(let i=0; tok && i<20; i++){
+      const r = await gfetch('https://www.googleapis.com/drive/v3/changes?spaces=appDataFolder&pageSize=100&fields=nextPageToken,newStartPageToken,changes(fileId)&pageToken='+encodeURIComponent(tok));
+      const j = await r.json(); if((j.changes||[]).length) any = true;
+      if(j.newStartPageToken){ liveTok = j.newStartPageToken; break; }
+      tok = j.nextPageToken;
+    }
+    if(any) await syncNow(false, true);
+  }catch(e){ if(e.message==='auth') setSyncStatus('needauth'); else if(/http 4/.test(e.message)) liveTok = null; }
+  finally{ liveBusy = false; }
 }
 // Índice de tableros en Drive (nombres, colores, eliminados)
 function mergeBoards(a, b){
@@ -1871,6 +1895,7 @@ if(needGate()){
   if(!ui.guided) setTimeout(startGuide, 700);
 }
 setInterval(()=>{ if(!locked && isConnected() && !document.hidden) syncNow(false); }, 120000);
+setInterval(liveCheck, LIVE_MS);
 setInterval(()=>{ if(!locked) checkReminders(); }, 30000);
 setInterval(()=>{ if(!locked && !drag && !document.querySelector('.overlay.show')) render(); }, 5*60000);
 // Para pruebas
