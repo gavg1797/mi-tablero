@@ -46,6 +46,13 @@ App tipo Trello, ideal para el trabajo: organiza tus tareas, proyectos y cronogr
 - Si la nube se pone naranja, la sesión de Google expiró (pasa más o menos cada hora): tócala para reconectar.
 - Proyecto de Google Cloud: **Mi Tablero** (`mi-tablero-515000`). Solo las cuentas agregadas como *usuarios de prueba* (Google Auth Platform → Público) pueden conectarse.
 
+## Google Calendar automático
+- Cada tarea con fecha se copia sola al calendario **«Mi Tablero»** del Google Calendar de la cuenta con la que entras, con su hora, recordatorios y repetición (diaria, semanal, quincenal, mensual o anual, y su «Hasta»).
+- Los cambios se actualizan solos: editar, finalizar (aparece con ✅), borrar una tarea o una sola repetición.
+- La app solo puede ver y cambiar ese calendario: no ve tus otros calendarios (permiso `calendar.app.created`, no requiere verificación de Google).
+- Se desactiva por dispositivo en **Opciones → Google Calendar automático**.
+- La primera vez que entres después de esta actualización, Google te pedirá permiso para el calendario.
+
 ## Tareas que se repiten
 - En el editor de la tarea elige **Repetir**: cada día, cada semana, cada 15 días (quincenal), cada mes o cada año. Opcionalmente, **Hasta** qué fecha.
 - Al guardar se crean solas las siguientes repeticiones. Para que el tablero no se llene, esperan en la pestaña **Programadas**, agrupadas en diarias, semanales, quincenales, mensuales y anuales.

@@ -395,6 +395,7 @@ body.locked .app, body.locked .fab, body.locked .drawer, body.locked .scrim{disp
     <button id="mSync">☁️<span>Sincronizar con Google<small id="mSyncState">Tus tareas en todos tus dispositivos</small></span></button>
     <button id="mNotif">🔔<span>Activar notificaciones<small id="mNotifState">Avisos en este dispositivo</small></span></button>
     <button id="mInstall">📲<span>Instalar en el celular<small>Agregar a la pantalla de inicio</small></span></button>
+    <button id="mCal">🗓️<span>Google Calendar automático<small id="mCalState">Tus tareas en tu calendario</small></span></button>
     <button id="mIcsAll">📅<span>Exportar tareas pendientes a calendario (.ics)<small>Importa todo a Google Calendar de una vez, con alarmas</small></span></button>
     <button id="mColumns">🗂️<span>Editar columnas<small>Renombrar, agregar o quitar</small></span></button>
     <button id="mAutoWeek">🗓️<span>Organizar automáticamente por fecha<small id="mAutoWeekState"></small></span></button>
@@ -1373,8 +1374,9 @@ $('#btnImport').onclick = ()=>{ impSess = null; $('#impPreview').innerHTML=''; s
 $('#impCancel').onclick = closeAll;
 
 /* ---------- Menú ---------- */
-function openOptions(){ refreshNotifLabel(); $('#mInstall').style.display = isStandalone() ? 'none' : ''; show('#ovMenu'); };
+function openOptions(){ refreshNotifLabel(); renderCalState(); $('#mInstall').style.display = isStandalone() ? 'none' : ''; show('#ovMenu'); };
 $('#mClose').onclick = closeAll;
+$('#mCal').onclick = openCalOption;
 $('#mNotif').onclick = async ()=>{
   if(!notifSupported()){ closeAll(); return showInfo('Notificaciones', iosHelp()); }
   if(Notification.permission==='granted' && state.settings.notify){ const ok = await sysNotify('🔔 Prueba de Mi Tablero','Las notificaciones funcionan en este dispositivo.','test'); if(!ok) toast('No se pudo mostrar'); return; }
@@ -1463,7 +1465,8 @@ document.addEventListener('visibilitychange', ()=>{ if(!document.hidden){ if(aut
 
 /* ---------- Sincronización con Google Drive ---------- */
 const SYNC_KEY = 'mi-tablero-sync';
-const SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
+const CAL_SCOPE = 'https://www.googleapis.com/auth/calendar.app.created';
+const SCOPE = 'https://www.googleapis.com/auth/drive.appdata ' + CAL_SCOPE;
 const FILE_NAME = boardFile(boardId);
 const INDEX_FILE = 'mi-tablero-tableros.json';
 let sync = (()=>{ try{ return JSON.parse(localStorage.getItem(SYNC_KEY)) || {}; }catch(e){ return {}; } })();
@@ -1474,6 +1477,7 @@ const isConnected = () => !!(sync.connected && clientId());
 const tokenValid = () => sync.token && sync.exp && Date.now() < sync.exp;
 let syncStatus = 'off', syncing = false, again = false, syncTimer = null, tokenClient = null;
 function setSyncStatus(st){
+  try{ renderCalState(); }catch(e){}
   try{ renderLogout(); }catch(e){}
   syncStatus = st; const b = $('#btnSync');
   b.className = 'icon-btn sync-btn ' + st;
@@ -1497,7 +1501,7 @@ function prepareTokenClient(){
     client_id: clientId(), scope: SCOPE,
     callback: r => {
       const p = pendingAuth; pendingAuth = null;
-      if(r && r.access_token){ sync.token = r.access_token; sync.exp = Date.now() + ((+r.expires_in||3600) - 120)*1000; sync.connected = true; saveSync(); p && p.res(); }
+      if(r && r.access_token){ sync.token = r.access_token; sync.exp = Date.now() + ((+r.expires_in||3600) - 120)*1000; sync.connected = true; if(typeof r.scope==='string' && r.scope) sync.calGranted = r.scope.includes(CAL_SCOPE) ? true : false; saveSync(); p && p.res(); }
       else p && p.rej(new Error((r && r.error) || 'auth'));
     },
     error_callback: e => { const p = pendingAuth; pendingAuth = null; p && p.rej(new Error((e && e.type) || 'popup')); }
@@ -1617,6 +1621,7 @@ async function syncNow(interactive, fromLive){
     if(changed && fromLive) toast('Actualizado desde otro dispositivo');
     setSyncStatus('ok');
     if(interactive) toast('Sincronizado con Google ✓');
+    scheduleCal();
   }catch(e){
     if(e.message==='auth'){ setSyncStatus('needauth'); if(interactive) toast('La sesión de Google expiró: toca la nube para reconectar'); }
     else { setSyncStatus('error'); if(interactive) toast('No se pudo sincronizar ('+e.message+')'); }
@@ -1624,6 +1629,164 @@ async function syncNow(interactive, fromLive){
     syncing = false;
     if(again){ again = false; setTimeout(()=>syncNow(false), 800); }
   }
+}
+/* ---------- Google Calendar automático ----------
+   Cada tarea con fecha se copia sola a un calendario propio «Mi Tablero» en el Google Calendar de la cuenta.
+   Las tareas que se repiten van como un solo evento repetitivo (con su frecuencia y su «Hasta»).
+   Permiso: calendar.app.created (solo puede ver y cambiar los calendarios que crea esta app). */
+const CAPI = 'https://www.googleapis.com/calendar/v3';
+const CAL_FILE = 'mi-tablero-calendario.json';
+let calBusy = false, calAgain = false, calState = '', calTimer = null;
+const calEnabled = () => ui.calOff !== true;
+const hexOf = s => [...new TextEncoder().encode(s)].map(b=>b.toString(16).padStart(2,'0')).join('');
+const evId = key => hexOf(boardId + '|' + key);          // id fijo (base32hex): todos los dispositivos usan el mismo
+function hashStr(s){ let h = 0; for(let i=0;i<s.length;i++) h = (h*31 + s.charCodeAt(i)) | 0; return s.length + ':' + h; }
+async function cfetch(url, opts={}){
+  const init = Object.assign({}, opts, {headers: Object.assign({Authorization:'Bearer '+sync.token}, opts.body ? {'Content-Type':'application/json'} : {})});
+  if(opts.body && typeof opts.body !== 'string') init.body = JSON.stringify(opts.body);
+  const r = await fetch(url, init);
+  if(r.status===401) throw new Error('auth');
+  if(r.status===403){
+    let t = ''; try{ t = await r.text(); }catch(e){}
+    if(/insufficient|scope|PERMISSION_DENIED|accessNotConfigured|SERVICE_DISABLED/i.test(t)) throw new Error('scope');
+    throw new Error('http 403');
+  }
+  return r;
+}
+function localDT(date, time, addMin=0){
+  const [y,m,d] = date.split('-').map(Number), [h,mi] = time.split(':').map(Number);
+  const dt = new Date(y, m-1, d, h, mi + addMin);
+  return todayStr(dt) + 'T' + pad(dt.getHours()) + ':' + pad(dt.getMinutes()) + ':00';
+}
+function calRRule(t, start){
+  let r = RRULE[t.repeat]; const day = t.repDay || +start.slice(8,10);
+  if(t.repeat==='mensual' && day > 28){ const ds = []; for(let i=28;i<=day;i++) ds.push(i); r = 'FREQ=MONTHLY;BYMONTHDAY=' + ds.join(',') + ';BYSETPOS=-1'; }   // en meses cortos, el último día
+  if(t.repeat==='anual' && start.slice(5,7)==='02' && day===29) r = 'FREQ=YEARLY;BYMONTH=2;BYMONTHDAY=28,29;BYSETPOS=-1';
+  if(t.repUntil) r += ';UNTIL=' + (t.time ? utcStamp(new Date(+t.repUntil.slice(0,4), +t.repUntil.slice(5,7)-1, +t.repUntil.slice(8,10), 23, 59, 59)) : ymd(t.repUntil));
+  return 'RRULE:' + r;
+}
+function evBody(c, opt={}){
+  const date = opt.start || c.date;
+  const ev = {
+    summary: (c.done && !opt.series ? '✅ ' : '') + (c.subject ? '['+c.subject+'] ' : '') + c.title,
+    description: details(c) + '\n\nAbrir en Mi Tablero: ' + location.origin + boardUrl(boardId),
+    start: c.time ? {dateTime: localDT(date, c.time), timeZone: TZ} : {date},
+    end: c.time ? {dateTime: localDT(date, c.time, 60), timeZone: TZ} : {date: addDays(date, 1)},
+    transparency: 'transparent',
+    source: {title: 'Mi Tablero', url: location.origin + location.pathname},
+    reminders: {useDefault: false, overrides: []},
+  };
+  for(const v of remsOf(c)){ let m = +v; if(!c.time) m -= 8*60; if(m >= 0 && m <= 40320 && ev.reminders.overrides.length < 5) ev.reminders.overrides.push({method:'popup', minutes:m}); }
+  if(opt.series){
+    ev.recurrence = [calRRule(c, date)];
+    if(opt.ex && opt.ex.length) ev.recurrence.push(c.time ? 'EXDATE;TZID=' + TZ + ':' + opt.ex.map(d=>ymd(d)+'T'+c.time.replace(':','')+'00').join(',') : 'EXDATE;VALUE=DATE:' + opt.ex.map(ymd).join(','));
+  }
+  return ev;
+}
+// Eventos que debe tener el calendario para este tablero: id → contenido
+function calWanted(){
+  const out = new Map(), seen = new Set();
+  for(const c of state.cards){
+    if(!c.date) continue;
+    if(c.repeat && REPEAT[c.repeat]){
+      const sid = seriesOf(c); if(seen.has(sid)) continue; seen.add(sid);
+      const list = state.cards.filter(x=>x.repeat && x.date && seriesOf(x)===sid);
+      const t = list.reduce((a,b)=> occOf(b) > occOf(a) ? b : a);       // contenido actual de la serie
+      const first = list.reduce((a,b)=> occOf(b) < occOf(a) ? b : a);   // primera fecha
+      const start = occOf(first), ex = [];
+      for(const id in state.deleted) if(id.startsWith(sid+'~')){ const d = id.slice(sid.length+1); if(d > start) ex.push(d); }
+      for(const x of list) if(x.date !== occOf(x)){ ex.push(occOf(x)); out.set(evId('C:'+x.id), evBody(x)); }   // repetición movida de día: evento aparte
+      out.set(evId('S:'+sid), evBody(t, {series:true, start, ex:[...new Set(ex)].sort()}));
+    } else out.set(evId('C:'+c.id), evBody(c));
+  }
+  return out;
+}
+async function ensureCalendar(){
+  if(sync.calId) return sync.calId;
+  let fid = sync.fileIds.__cal || await driveFind(CAL_FILE), data = null;
+  if(fid){ try{ data = await driveRead(fid); }catch(e){ fid = null; } }
+  if(data && data.calId){
+    const r = await cfetch(CAPI + '/calendars/' + encodeURIComponent(data.calId));
+    if(r.ok){ sync.calId = data.calId; sync.fileIds.__cal = fid; saveSync(); return sync.calId; }
+  }
+  const r = await cfetch(CAPI + '/calendars', {method:'POST', body:{summary:'Mi Tablero', description:'Tus tareas de Mi Tablero. Se actualiza solo desde la app.', timeZone:TZ}});
+  if(!r.ok) throw new Error('http ' + r.status);
+  const j = await r.json();
+  sync.calId = j.id; sync.calHash = {};
+  sync.fileIds.__cal = await driveWrite(fid, {calId:j.id, created:Date.now()}, CAL_FILE); saveSync();
+  return sync.calId;
+}
+function scheduleCal(){ clearTimeout(calTimer); calTimer = setTimeout(()=>calSync(false), 800); }
+async function calSync(interactive){
+  if(!calEnabled() || locked || boardRemoved || !navigator.onLine || !isConnected() || !tokenValid()) return;
+  if(sync.calGranted === false && !interactive) return;
+  if(!sync.owner || sync.whoTok !== sync.token) return;
+  if(calBusy){ calAgain = true; return; }
+  calBusy = true; calState = 'busy'; renderCalState();
+  try{
+    const calId = await ensureCalendar(), base = CAPI + '/calendars/' + encodeURIComponent(calId) + '/events';
+    const want = calWanted(), H = sync.calHash = sync.calHash || {}, pre = boardId + '|';
+    let ops = 0, missingCal = false;
+    for(const [eid, body] of want){
+      const h = hashStr(JSON.stringify(body)); if(H[pre+eid] === h) continue;
+      let r = await cfetch(base + '/' + eid, {method:'PUT', body});
+      if(r.status===404 || r.status===410){
+        r = await cfetch(base, {method:'POST', body:Object.assign({id:eid}, body)});
+        if(r.status===409) r = await cfetch(base + '/' + eid, {method:'PUT', body:Object.assign({status:'confirmed'}, body)});   // existía borrado
+        if(r.status===404){ missingCal = true; break; }
+      }
+      if(r.ok) H[pre+eid] = h;
+      if(++ops >= 60) { calAgain = true; break; }
+    }
+    if(missingCal){ sync.calId = null; sync.calHash = {}; saveSync(); calAgain = true; }   // el calendario fue borrado: se crea de nuevo
+    else {
+      // quita los eventos de tareas que ya no existen (también las borradas en otro dispositivo)
+      const gone = new Set(Object.keys(H).filter(k=>k.startsWith(pre) && H[k] !== 'x' && !want.has(k.slice(pre.length))).map(k=>k.slice(pre.length)));
+      for(const id in state.deleted){ for(const key of id.includes('~') ? ['C:'+id, 'S:'+id.split('~')[0]] : ['C:'+id, 'S:'+id]){ const e = evId(key); if(!want.has(e) && H[pre+e] !== 'x') gone.add(e); } }
+      for(const eid of gone){
+        if(ops >= 120){ calAgain = true; break; }
+        const r = await cfetch(base + '/' + eid, {method:'DELETE'}); ops++;
+        if(r.ok || r.status===404 || r.status===410) H[pre+eid] = 'x';
+      }
+    }
+    sync.calGranted = true; saveSync();
+    calState = 'ok';
+    if(interactive) toast('Google Calendar al día ✓ (calendario «Mi Tablero»)');
+  }catch(e){
+    if(e.message==='scope'){ sync.calGranted = false; saveSync(); calState = 'scope'; if(interactive) toast('Falta el permiso de Google Calendar'); }
+    else { calState = e.message==='auth' ? 'auth' : 'error'; if(interactive) toast('No se pudo actualizar Google Calendar (' + e.message + ')'); }
+  }finally{
+    calBusy = false; renderCalState();
+    if(calAgain){ calAgain = false; setTimeout(()=>calSync(false), 1500); }
+  }
+}
+// Al eliminar un tablero, se quitan sus eventos del calendario
+async function calWipeBoard(id){
+  if(!sync.calId || !tokenValid() || !navigator.onLine) return;
+  const H = sync.calHash || {}, pre = id + '|', base = CAPI + '/calendars/' + encodeURIComponent(sync.calId) + '/events/';
+  for(const k of Object.keys(H)) if(k.startsWith(pre)){ if(H[k] !== 'x'){ try{ await cfetch(base + k.slice(pre.length), {method:'DELETE'}); }catch(e){} } delete H[k]; }
+  saveSync();
+}
+function renderCalState(){
+  const el = $('#mCalState'); if(!el) return;
+  el.textContent = !calEnabled() ? 'Desactivado en este dispositivo · toca para activar'
+    : sync.calGranted === false ? 'Toca para dar permiso a Google Calendar'
+    : calState==='busy' ? 'Actualizando…'
+    : calState==='error' || calState==='auth' ? 'No se pudo actualizar · toca para reintentar'
+    : 'Activado: tus tareas van al calendario «Mi Tablero»';
+}
+async function openCalOption(){
+  if(!isConnected()){ openSync(); return; }
+  if(!calEnabled() || sync.calGranted === false || calState==='error' || calState==='auth'){
+    ui.calOff = false; try{ localStorage.setItem(UI_KEY, JSON.stringify(ui)); }catch(e){}
+    if(sync.calGranted === false || !tokenValid() || calState==='auth'){ try{ await requestToken(''); }catch(e){ toast('No se completó el permiso de Google'); renderCalState(); return; } }
+    if(sync.calGranted === false) sync.calGranted = undefined;
+    closeAll(); await calSync(true); return;
+  }
+  closeAll();
+  confirmBox('Google Calendar automático', 'Cada tarea con fecha se copia sola, con su hora, recordatorios y repetición, al calendario <b>«Mi Tablero»</b> de tu Google Calendar (' + esc(sync.email||'tu cuenta') + '). Los cambios se actualizan solos.<br><br>¿Quieres desactivarlo en este dispositivo? Lo que ya está en el calendario no se borra.', ()=>{
+    ui.calOff = true; try{ localStorage.setItem(UI_KEY, JSON.stringify(ui)); }catch(e){} renderCalState(); toast('Google Calendar automático desactivado en este dispositivo');
+  }, 'Desactivar');
 }
 /* ---------- En vivo: recibe al instante lo que se guarda en otros dispositivos ----------
    Cada pocos segundos pregunta a Google Drive si algún archivo de la app cambió (una consulta muy liviana).
@@ -1808,6 +1971,7 @@ $('#dDelete').onclick = ()=>{
   closeDrawer();
   const b = curBoard();
   confirmBox('Eliminar tablero', `Se eliminará <b>“${esc(b.name)}”</b> con sus <b>${state.cards.length}</b> tareas en este dispositivo${isConnected()?' y en tu Google Drive':''}. No se puede deshacer.`, async ()=>{
+    try{ await calWipeBoard(boardId); }catch(e){}
     boardRemoved = true; clearTimeout(syncTimer);
     boards.deleted[boardId] = Date.now(); boards.list = boards.list.filter(x=>x.id!==boardId); saveBoards();
     try{ localStorage.removeItem(KEY); }catch(e){}
@@ -2038,6 +2202,7 @@ function startGuide(){
     {sel:'#tabSched', title:'Programadas', text:'Las tareas que se repiten (cada día, semana, 15 días, mes o año) guardan aquí sus próximas fechas. Pasan solas al tablero cuando se acercan, así el tablero no se llena.'},
     {sel:'.zoom', title:'Zoom', text:'Acerca o aleja el tablero para ver más columnas o leer mejor.'},
     {sel:'#btnDrawer', title:'Menú', text:'Aquí cambias de tablero, creas uno nuevo, lo copias, compartes la app y abres las opciones (notificaciones, calendario y respaldo).'},
+    {title:'Google Calendar automático', text:'Tus tareas con fecha aparecen solas en el calendario «Mi Tablero» de tu Google Calendar, con su hora, recordatorios y repetición. Puedes desactivarlo en Opciones.'},
     {sel:'#btnSync', title:'Guardado en tu Google Drive', text:'Todo se guarda solo en tu Drive. El punto verde indica que está al día; si se pone naranja, tócalo para reconectar.'},
     {sel:'#whoChip', title:'Tu cuenta', text:'Aquí ves con qué cuenta entraste. Cada cuenta ve solo su propia información.'},
     {sel:'#btnLogout', title:'Cerrar sesión', text:'Al terminar, cierra sesión: tus cambios se guardan en Drive y no queda nada en este dispositivo.'},
