@@ -129,6 +129,25 @@ table.preview td,table.preview th{border-bottom:1px solid var(--line);padding:6p
 .steps{display:flex;flex-direction:column;gap:10px;margin-bottom:6px}
 .steps>div{display:flex;gap:12px;align-items:flex-start;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:10px 12px;font-size:14px}
 .steps>div>b{flex:0 0 28px;height:28px;border-radius:9px;background:var(--ink);color:var(--on-ink);display:grid;place-items:center;font-family:var(--display);font-stretch:68%;font-size:17px}
+.gate{position:fixed;inset:0;z-index:600;display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto;background:var(--hero) no-repeat,var(--bg)}
+.gate-card{width:min(440px,100%);background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:28px 24px 22px;box-shadow:0 20px 50px rgba(32,33,40,.10);text-align:center;margin:auto}
+.gate-logo{display:flex;justify-content:center;margin-bottom:10px}
+.gate-title{font-family:var(--display);font-weight:900;font-stretch:68%;font-size:46px;line-height:1;margin:4px 0 6px}
+.gate-sub{color:var(--muted);margin:0 0 18px}
+.gate-btn{min-height:48px;font-size:15px;margin-top:8px;gap:10px}
+.gate-msg{min-height:20px;font-size:14px;color:var(--muted);margin:10px 0 4px}
+.gate-points{list-style:none;padding:0;margin:14px 0 10px;text-align:left;display:flex;flex-direction:column;gap:8px;font-size:13.5px;color:var(--muted)}
+.gate-points b{color:var(--text)}
+.gate-link{font-size:13px;color:var(--accent);font-weight:700}
+body.locked .app, body.locked .fab, body.locked .drawer, body.locked .scrim{display:none!important}
+.who-chip{display:inline-flex;align-items:center;gap:9px;padding:4px 14px 4px 4px;border:1px solid var(--line);border-radius:999px;background:var(--surface);min-width:0;max-width:300px;box-shadow:0 1px 2px rgba(32,33,40,.04)}
+.who-ava{flex:0 0 30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:14px;color:#fff;background:linear-gradient(135deg,#476adb,#7aa0ff)}
+.who-tx{display:flex;flex-direction:column;line-height:1.15;min-width:0;text-align:left}
+.who-tx small{font-size:11px;color:var(--muted);font-weight:600}
+.who-tx b{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.who-chip.in-drawer{display:flex;max-width:none;border-radius:14px;margin:-4px 0 12px;padding:6px 12px 6px 6px;background:var(--bg)}
+.who-chip.in-drawer[hidden]{display:none!important}
+@media (max-width:760px){ header{flex-wrap:wrap} header .who-chip{order:10;flex:1 1 100%;max-width:none;border-radius:14px;padding:5px 12px 5px 5px} }
 .lo-actions{display:flex;flex-direction:column;gap:8px;margin-top:12px}
 .lo-actions .btn{min-height:44px}
 .logout-btn{padding:7px 11px}
@@ -199,6 +218,7 @@ table.preview td,table.preview th{border-bottom:1px solid var(--line);padding:6p
   <header>
     <button class="icon-btn" id="btnDrawer" aria-label="Abrir menú de tableros"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button>
     <div class="brand"><span class="eyebrow">Ideal para el trabajo</span><h1 id="boardTitle" title="Cambiar de tablero">Mi Tablero</h1></div>
+    <div class="who-chip" id="whoChip" hidden><span class="who-ava" id="whoAva"></span><span class="who-tx"><small>Sesión iniciada con</small><b id="whoMail"></b></span></div>
     <button class="btn logout-btn" id="btnLogout" type="button" hidden title="Cerrar sesión"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4"/></svg><span class="hide-sm">Cerrar sesión</span></button>
     <button class="icon-btn sync-btn" id="btnSync" title="Sincronizar con Google" aria-label="Sincronizar con Google"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 18a4.5 4.5 0 01-.6-8.96A6 6 0 0118 8.5a4 4 0 01-.5 9.5H7z"/></svg><i id="syncDot"></i></button>
     <button class="btn ghost" id="btnImport" title="Cargar cronograma (Excel, Word, PDF…)">
@@ -221,11 +241,31 @@ table.preview td,table.preview th{border-bottom:1px solid var(--line);padding:6p
     <div class="agenda" id="agenda" hidden></div>
   </main>
 </div>
+<!-- Acceso: los tableros solo se ven con la sesión de Google iniciada -->
+<div class="gate" id="gate" hidden>
+  <div class="gate-card">
+    <div class="gate-logo"><svg width="56" height="56" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#476adb"/><rect x="5" y="5" width="4" height="10" rx="1.2" fill="#fff"/><rect x="10" y="5" width="4" height="7" rx="1.2" fill="#fff"/><rect x="15" y="5" width="4" height="5" rx="1.2" fill="#fff"/></svg></div>
+    <span class="eyebrow">Ideal para el trabajo</span>
+    <h1 class="gate-title">Mi Tablero</h1>
+    <p class="gate-sub">Inicia sesión con tu cuenta de Google para ver tus tableros.</p>
+    <button class="btn primary block gate-btn" id="gContinue" hidden></button>
+    <button class="btn block gate-btn" id="gLogin"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg><span id="gLoginTx">Iniciar sesión con Google</span></button>
+    <p class="gate-msg" id="gMsg" role="status" aria-live="polite"></p>
+    <ul class="gate-points">
+      <li><b>Privado.</b> Tus tableros se guardan solo en tu Google Drive, en una carpeta oculta que únicamente esta app puede ver.</li>
+      <li><b>Cada cuenta ve solo su información.</b> Al cerrar sesión no queda nada en este dispositivo.</li>
+      <li><b>Gratis</b> y sin anuncios. Carga tu cronograma y la app lo organiza por fechas.</li>
+    </ul>
+    <a class="gate-link" href="privacidad.html">Política de privacidad</a>
+  </div>
+</div>
+
 <!-- Barra de menú: tableros -->
 <div class="scrim" id="scrim"></div>
 <aside class="drawer" id="drawer" aria-label="Menú de tableros">
   <div class="drawer-head"><span class="eyebrow">Mi Tablero · Ideal para el trabajo</span><button class="icon-btn" id="drawerClose" aria-label="Cerrar menú">✕</button></div>
   <div class="drawer-title">Tus tableros</div>
+  <div class="who-chip in-drawer" id="whoChip2" hidden><span class="who-ava" id="whoAva2"></span><span class="who-tx"><small>Sesión iniciada con</small><b id="whoMail2"></b></span></div>
   <div class="dsec" style="border-top:none;padding-top:0">
     <div class="blist" id="boardList"></div>
     <button class="btn primary block" id="dNew">+ Nuevo tablero</button>
@@ -356,7 +396,7 @@ table.preview td,table.preview th{border-bottom:1px solid var(--line);padding:6p
   <details id="syncAdv"><summary class="hint" style="cursor:pointer">Configuración avanzada (ID de cliente)</summary>
     <div class="field" style="margin-top:8px"><label for="sClient">ID de cliente OAuth de Google</label><input id="sClient" placeholder="xxxxxxxx.apps.googleusercontent.com" autocomplete="off" spellcheck="false"></div>
   </details>
-  <div class="actions"><button class="btn danger" id="sOff">Desconectar</button><span class="spacer"></span><button class="btn" id="sClose">Cerrar</button><button class="btn primary" id="sConnect">Conectar con Google</button></div>
+  <div class="actions"><button class="btn danger" id="sOff">Cerrar sesión</button><span class="spacer"></span><button class="btn" id="sClose">Cerrar</button><button class="btn primary" id="sConnect">Conectar con Google</button></div>
 </div></div>
 
 <!-- Bienvenida -->
@@ -377,13 +417,11 @@ table.preview td,table.preview th{border-bottom:1px solid var(--line);padding:6p
 <div class="overlay" id="ovLogout"><div class="sheet">
   <h2>Cerrar sesión</h2>
   <p id="loWho" style="margin:0 0 6px;font-weight:700"></p>
-  <p class="hint">Antes de salir, Mi Tablero guarda en tu Google Drive los cambios pendientes de todos tus tableros.</p>
+  <p class="hint">Mi Tablero guarda tus cambios en tu Google Drive y borra tus tableros de este dispositivo. Al volver a iniciar sesión se descargan de nuevo desde tu Drive.</p>
   <div class="lo-actions">
     <button class="btn blue block" id="loYes">Cerrar sesión</button>
-    <button class="btn block" id="loWipe" style="color:var(--bad)">Cerrar sesión y borrar de este dispositivo</button>
     <button class="btn block" id="loNo">Cancelar</button>
   </div>
-  <p class="hint" style="margin-top:12px">«Borrar de este dispositivo» quita tus tableros guardados en este navegador (útil en una computadora prestada). Tu copia en Google Drive no se toca: al volver a iniciar sesión se recuperan.</p>
 </div></div>
 
 <!-- Confirmación / información -->
@@ -417,7 +455,9 @@ function loadBoards(){
   return b;
 }
 let boards = loadBoards();
-function saveBoards(){ try{ localStorage.setItem(BOARDS_KEY, JSON.stringify(boards)); }catch(e){} }
+// Sin sesión iniciada no se guarda nada en el dispositivo
+const hasSession = () => { try{ const s = JSON.parse(localStorage.getItem('mi-tablero-sync')||'{}'); return !!(s.connected && s.owner); }catch(e){ return false; } };
+function saveBoards(){ if(!hasSession()) return; try{ localStorage.setItem(BOARDS_KEY, JSON.stringify(boards)); }catch(e){} }
 saveBoards();
 const curBoard = () => boards.list.find(x=>x.id===boardId) || {id:boardId, name:'Tablero'};
 const boardUrl = id => location.pathname + (id===MAIN_ID ? '' : '#b-'+id);
@@ -475,7 +515,7 @@ function stamp(){
   snap = makeSnap();
 }
 function save(noSync){
-  if(boardRemoved) return;
+  if(boardRemoved || !hasSession()) return;
   stamp();
   try{ localStorage.setItem(KEY, JSON.stringify(state)); }
   catch(e){ toast('No se pudo guardar en este dispositivo'); }
@@ -1226,10 +1266,10 @@ function prepareTokenClient(){
   return tokenClient;
 }
 // Debe llamarse directamente desde un toque/clic (para que el navegador permita la ventana de Google)
-function requestToken(){
+function requestToken(prompt){
   const tc = prepareTokenClient();
   if(!tc) return Promise.reject(new Error('gis'));
-  return new Promise((res, rej)=>{ pendingAuth = {res, rej}; tc.requestAccessToken({prompt: sync.connected ? '' : 'consent'}); });
+  return new Promise((res, rej)=>{ pendingAuth = {res, rej}; tc.requestAccessToken({prompt: prompt!=null ? prompt : (sync.connected ? '' : 'consent')}); });
 }
 /* ---------- Varias cuentas en el mismo navegador ----------
    Los tableros de cada cuenta de Google se guardan aparte: al conectar otra cuenta no se mezclan ni se borran. */
@@ -1242,31 +1282,19 @@ async function fetchWho(){
     return j.user && j.user.permissionId ? {id:j.user.permissionId, email:j.user.emailAddress||''} : null;
   }catch(e){ return null; }
 }
-function stashProfile(id){
-  const data = {}; for(const k of Object.keys(localStorage)) if(isDataKey(k)) data[k] = localStorage.getItem(k);
-  try{ localStorage.setItem(PROFILE_PREFIX+id, JSON.stringify({keys:data, fileIds:sync.fileIds||{}, email:(sync.owner||{}).email||'', saved:Date.now()})); }
-  catch(e){ return false; }
-  for(const k of Object.keys(data)) localStorage.removeItem(k);
-  return true;
+// Borra del dispositivo todos los tableros (la copia de Google Drive no se toca)
+function wipeLocalData(){
+  try{ for(const k of Object.keys(localStorage)) if(isDataKey(k) || k.startsWith(PROFILE_PREFIX)) localStorage.removeItem(k); }catch(e){}
 }
-function restoreProfile(id){
-  let p = null; try{ p = JSON.parse(localStorage.getItem(PROFILE_PREFIX+id)); }catch(e){}
-  if(!p) return {};
-  for(const [k,v] of Object.entries(p.keys||{})) try{ localStorage.setItem(k, v); }catch(e){}
-  localStorage.removeItem(PROFILE_PREFIX+id);
-  return p.fileIds || {};
-}
-// Comprueba qué cuenta está conectada. Devuelve 'ok', 'switched' (se cambió de espacio y la página se recarga) o 'fail'.
+// Comprueba qué cuenta está conectada. Devuelve 'ok', 'switched' (otra cuenta: se borran los datos anteriores y se recarga) o 'fail'.
 async function ensureAccount(){
   if(sync.owner && sync.whoTok === sync.token) return 'ok';
   const who = await fetchWho(); if(!who) return 'fail';
   sync.whoTok = sync.token; sync.email = who.email;
   if(!sync.owner || sync.owner.id === who.id){ sync.owner = who; saveSync(); renderLogout(); return 'ok'; }
-  const prev = sync.owner;
-  if(!stashProfile(prev.id)){ toast('No hay espacio para guardar aparte los tableros de '+(prev.email||'la otra cuenta')); return 'fail'; }
-  sync.fileIds = restoreProfile(who.id); sync.owner = who; saveSync();
-  boardRemoved = true;
-  try{ sessionStorage.setItem('mt-switched', prev.email||'la otra cuenta'); }catch(e){}
+  // otra cuenta: en este dispositivo solo puede quedar la información de la cuenta activa
+  boardRemoved = true; wipeLocalData();
+  sync.owner = who; sync.fileIds = {}; saveSync();
   location.replace(boardUrl(MAIN_ID)); setTimeout(()=>location.reload(), 100);
   return 'switched';
 }
@@ -1365,8 +1393,9 @@ function mergeBoards(a, b){
   list.sort((x,y)=> x.id===MAIN_ID ? -1 : y.id===MAIN_ID ? 1 : (x.created||0)-(y.created||0));
   return {list, deleted};
 }
+let pulling = false;
 async function syncIndex(){
-  if(!sync.owner || sync.whoTok !== sync.token || boardRemoved) return;
+  if(!sync.owner || sync.whoTok !== sync.token || (boardRemoved && !pulling)) return;
   let id = sync.fileIds.__index || null, remote = null;
   if(id){ try{ remote = await driveRead(id); }catch(e){ if(String(e.message).startsWith('http 404')) id = null; else throw e; } }
   if(!id){ id = await driveFind(INDEX_FILE); if(id) remote = await driveRead(id); }
@@ -1432,12 +1461,7 @@ $('#sConnect').onclick = ()=>{
   if(!tokenClient){ loadGIS().then(prepareTokenClient).then(()=>toast('Listo, toca otra vez “Conectar”')).catch(()=>toast('No se pudo cargar Google. ¿Tienes internet?')); return; }
   closeAll(); syncNow(true);
 };
-$('#sOff').onclick = ()=>{
-  confirmBox('Desconectar de Google', 'Tus tareas se quedan en este dispositivo y en tu Drive, pero dejarán de sincronizarse aquí.', ()=>{
-    try{ if(sync.token && window.google) google.accounts.oauth2.revoke(sync.token, ()=>{}); }catch(e){}
-    sync = {clientId: sync.clientId, owner: sync.owner, fileIds: sync.fileIds}; saveSync(); setSyncStatus('off'); toast('Desconectado');
-  });
-};
+$('#sOff').onclick = ()=>{ closeAll(); openLogout(); };
 $('#sClose').onclick = closeAll;
 $('#mSync').onclick = openSync;
 $('#btnSync').onclick = ()=>{
@@ -1685,6 +1709,10 @@ $('#dHelp').onclick = ()=>{ closeDrawer(); showWelcome(); };
 /* ---------- Cerrar sesión ---------- */
 function renderLogout(){
   const on = isConnected();
+  const mail = sync.email || (sync.owner||{}).email || '';
+  for(const [c,a,m] of [['#whoChip','#whoAva','#whoMail'],['#whoChip2','#whoAva2','#whoMail2']]){
+    $(c).hidden = !(on && mail); $(m).textContent = mail; $(a).textContent = mail.slice(0,1).toUpperCase(); $(c).title = mail;
+  }
   $('#btnLogout').hidden = !on; $('#dLogout').hidden = !on;
   const who = sync.email || (sync.owner||{}).email || 'tu cuenta de Google';
   $('#btnLogout').title = 'Cerrar sesión (' + who + ')';
@@ -1697,26 +1725,31 @@ function openLogout(){
   $('#loYes').textContent = 'Cerrar sesión';
   show('#ovLogout');
 }
-async function doLogout(wipe){
+async function doLogout(force){
   $('#ovLogout').querySelectorAll('button').forEach(b=>b.disabled=true);
   $('#loYes').textContent = 'Guardando y cerrando sesión…';
-  // guarda los cambios pendientes en Drive antes de salir
+  let saved = false;
   if(navigator.onLine && tokenValid()){
     try{
       stamp(); await syncNow(false);
-      if(boardRemoved && sync.whoTok !== sync.token) return;
-      for(const b of boards.list.slice()) if(b.id!==boardId) await syncOtherBoard(b.id);
-      await syncIndex();
-    }catch(e){}
+      if(boardRemoved) return;
+      if(syncStatus==='ok'){
+        for(const b of boards.list.slice()) if(b.id!==boardId) await syncOtherBoard(b.id);
+        await syncIndex();
+        saved = true;
+      }
+    }catch(e){ saved = false; }
+  }
+  if(!saved && !force){
+    closeAll();
+    confirmBox('Cambios sin guardar', 'No se pudieron guardar tus últimos cambios en Google Drive (sin internet o la sesión de Google venció; toca la nube ☁️ para reconectar). <b>Si cierras sesión ahora, esos cambios se perderán.</b>', ()=>{ show('#ovLogout'); doLogout(true); }, 'Cerrar sesión de todos modos');
+    return;
   }
   try{ if(sync.token && window.google && google.accounts) google.accounts.oauth2.revoke(sync.token, ()=>{}); }catch(e){}
   boardRemoved = true;
-  if(wipe){
-    try{ for(const k of Object.keys(localStorage)) if(k.startsWith('mi-tablero')) localStorage.removeItem(k); }catch(e){}
-    try{ localStorage.setItem(SYNC_KEY, JSON.stringify({clientId: sync.clientId||''})); localStorage.setItem(UI_KEY, JSON.stringify({welcomed:true})); }catch(e){}
-  } else {
-    sync = {clientId: sync.clientId, owner: sync.owner, fileIds: sync.fileIds}; saveSync();
-  }
+  wipeLocalData();
+  try{ localStorage.removeItem(UI_KEY+'-x'); }catch(e){}
+  sync = {clientId: sync.clientId}; saveSync();
   location.replace(boardUrl(MAIN_ID));
   setTimeout(()=>location.reload(), 100);
 }
@@ -1724,23 +1757,64 @@ $('#btnLogout').onclick = openLogout;
 $('#dLogout').onclick = openLogout;
 $('#loNo').onclick = closeAll;
 $('#loYes').onclick = ()=>doLogout(false);
-$('#loWipe').onclick = ()=>doLogout(true);
+
+
+/* ---------- Acceso con Google (los tableros solo se ven con la sesión iniciada) ---------- */
+const needGate = () => !(isConnected() && tokenValid() && sync.owner && sync.whoTok === sync.token);
+let locked = false;
+function gmsg(t){ $('#gMsg').textContent = t || ''; }
+function showGate(){
+  locked = true; document.body.classList.add('locked'); $('#gate').hidden = false;
+  const prev = (sync.owner||{}).email;
+  $('#gContinue').hidden = !prev; if(prev) $('#gContinue').textContent = 'Continuar como ' + prev;
+  $('#gLoginTx').textContent = prev ? 'Usar otra cuenta de Google' : 'Iniciar sesión con Google';
+  gmsg(navigator.onLine ? '' : 'Sin internet. Conéctate para iniciar sesión.');
+  if(navigator.onLine) loadGIS().then(prepareTokenClient).catch(()=>gmsg('No se pudo cargar Google. Revisa tu conexión.'));
+}
+async function gateLogin(prompt){
+  if(!navigator.onLine){ gmsg('Sin internet. Conéctate para iniciar sesión.'); return; }
+  if(!tokenClient){ gmsg('Cargando Google…'); loadGIS().then(prepareTokenClient).then(()=>gmsg('Listo. Toca de nuevo para iniciar sesión.')).catch(()=>gmsg('No se pudo cargar Google. Revisa tu conexión.')); return; }
+  $('#gate').querySelectorAll('button').forEach(b=>b.disabled=true);
+  try{ await requestToken(prompt); }
+  catch(e){ gmsg('No se completó el inicio de sesión.'); $('#gate').querySelectorAll('button').forEach(b=>b.disabled=false); return; }
+  gmsg('Abriendo tus tableros…');
+  const who = await fetchWho();
+  if(!who){ gmsg('No se pudo comprobar tu cuenta de Google. Intenta de nuevo.'); $('#gate').querySelectorAll('button').forEach(b=>b.disabled=false); return; }
+  boardRemoved = true;                       // nada de esta página se vuelve a guardar: se recarga con los datos de la cuenta
+  if(sync.owner && sync.owner.id !== who.id){ wipeLocalData(); sync.fileIds = {}; }
+  try{ for(const k of Object.keys(localStorage)) if(k.startsWith(PROFILE_PREFIX)) localStorage.removeItem(k); }catch(e){}
+  sync.owner = who; sync.email = who.email; sync.whoTok = sync.token; sync.connected = true; saveSync();
+  // descarga desde Google Drive la lista de tableros y cada tablero
+  try{
+    pulling = true;
+    boards = loadBoards();
+    await syncIndex();
+    for(const b of boards.list.slice()) await syncOtherBoard(b.id);
+  }catch(e){}
+  pulling = false;
+  location.reload();
+}
+$('#gContinue').onclick = ()=>gateLogin('');
+$('#gLogin').onclick = ()=>gateLogin((sync.owner||{}).email ? 'select_account' : 'select_account consent');
 
 /* ---------- Inicio ---------- */
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
 setSyncStatus(isConnected() ? (tokenValid() ? 'idle' : 'needauth') : 'off');
-try{ const sw = sessionStorage.getItem('mt-switched'); if(sw){ sessionStorage.removeItem('mt-switched'); setTimeout(()=>toast('Los tableros de '+sw+' siguen guardados en este dispositivo. Vuelve a ellos conectando esa cuenta.'), 600); } }catch(e){}
-net();
-if(autoWeek()) save();
-if(isConnected() && navigator.onLine){ loadGIS().then(prepareTokenClient).catch(()=>{}); syncNow(false); }
-setInterval(()=>{ if(isConnected() && !document.hidden) syncNow(false); }, 120000);
-render();
-checkReminders();
-if(!ui.welcomed && !state.cards.length && boardId===MAIN_ID && boards.list.length<=1) setTimeout(showWelcome, 300);
-setInterval(()=>{ checkReminders(); }, 30000);
-setInterval(()=>{ if(!drag && !document.querySelector('.overlay.show')) render(); }, 5*60000);
+if(needGate()){
+  showGate();
+} else {
+  net();
+  if(autoWeek()) save();
+  if(navigator.onLine){ loadGIS().then(prepareTokenClient).catch(()=>{}); syncNow(false); }
+  render();
+  checkReminders();
+  if(!ui.welcomed && !state.cards.length && boardId===MAIN_ID && boards.list.length<=1) setTimeout(showWelcome, 300);
+}
+setInterval(()=>{ if(!locked && isConnected() && !document.hidden) syncNow(false); }, 120000);
+setInterval(()=>{ if(!locked) checkReminders(); }, 30000);
+setInterval(()=>{ if(!locked && !drag && !document.querySelector('.overlay.show')) render(); }, 5*60000);
 // Para pruebas
 window.__tablero = {get state(){return state;}, get boards(){return boards;}, mergeBoards, buildIcs, gcalUrl, mergeStates, migrate, targetColFor, showPreview, analyzeFile};
 })();
