@@ -139,10 +139,12 @@ const HEAD = {
   subject:/\b(materia|materias|curso|cursos|asignatura|clase|subject|course|catedra|modulo|area|profesor|docente)\b/,
   status: /\b(estado|status|avance|progreso|completado|hecho|listo|check)\b/,
   start:  /\b(inicio|desde|start|apertura)\b/,
+  session:/\b(sesion|sesiones|semana|semanas|week|leccion|clase n|n[°º] sesion)\b/,
 };
 function isHeaderRow(row, ctx){
   // una fila de encabezados no tiene fechas y sus celdas son cortas
   if(row.some(c=>c instanceof Date || (typeof c==='number' && c>30000) || (typeof c==='string' && findDate(c, ctx||{})))) return false;
+  if(row.some(c=>/^\s*\d+\s*$/.test(String(c??'')))) return false; // números de sesión = fila de datos
   let hits = 0, short = 0; const used = new Set(); const filled = row.filter(c=>norm(c));
   row.forEach(c=>{ const t = norm(c); if(!t || t.length>30) return; if(t.length<=22) short++; for(const k in HEAD){ if(!used.has(k) && HEAD[k].test(t)){ hits++; used.add(k); break; } } });
   return (hits >= 2 && short >= filled.length-1) || (hits>=1 && filled.length<=2 && short===filled.length);
@@ -196,6 +198,25 @@ function parseTable(rows, ctx, defaultSubject){
   const data = rows.slice(hIdx+1);
   const inf = inferColumns(data, ctx);
   for(const k of ['date','title','subject','status']) if(map[k]==null && inf[k]!=null && !Object.values(map).includes(inf[k])) map[k]=inf[k];
+  // ¿Tabla organizada por sesiones/semanas y sin fechas?
+  if(hIdx>=0){
+    const sIdx = rows[hIdx].findIndex(c=>{ const t=norm(c); return t && t.length<=15 && SESSION_HEAD.test(t); });
+    const anyDate = data.some(r=>r.some(v=>dateFromCell(v, ctx)));
+    if(sIdx>=0 && !anyDate){
+      const label = /semana|week/.test(norm(rows[hIdx][sIdx])) ? 'Semana' : 'Sesión';
+      const others = rows[hIdx].map((c,i)=>i).filter(i=>i!==sIdx);
+      const temaIdx = others.find(i=>/tema|contenido|unidad|modulo/.test(norm(rows[hIdx][i]))) ?? others[0];
+      const actIdx = others.find(i=>i!==temaIdx && /actividad|tarea|evaluacion|entrega|asignacion/.test(norm(rows[hIdx][i]))) ?? others.find(i=>i!==temaIdx);
+      const srows = []; let cur = null;
+      for(const r of data){
+        const n = parseInt(String(r[sIdx]??'').trim(),10);
+        const tema = String(r[temaIdx]??''), acts = actIdx!=null ? String(r[actIdx]??'') : '';
+        if(!isNaN(n)){ cur = {n, label, tema, acts}; srows.push(cur); }
+        else if(cur){ cur.tema += '\n'+tema; cur.acts += '\n'+acts; }
+      }
+      if(srows.length>=2) return expandSessions(srows, defaultSubject||'');
+    }
+  }
   const out = []; let lastDate=null, lastSubject=defaultSubject||'';
   for(const r of data){
     // fila que es sólo un título de sección (p. ej. nombre de materia o "Semana 3")
@@ -294,6 +315,67 @@ function parseText(text, ctx, defaultSubject){
   return out;
 }
 
+/* ---------- Cronogramas por SESIONES / SEMANAS (sin fechas) ---------- */
+const NOT_GRADED = /entrega de (notas|calificaciones|promedios)|cierre de curso|bienvenida/i;
+const GRADED_RE = /(valor\s*:?\s*\d+\s*%|\d+\s*%|\bprueba\b|\bparcial\b|\bexamen\b|\bquiz\b|\bentrega\b|\bautoevaluaci[oó]n\b|\bevaluaci[oó]n\b|\bproyecto final\b|\bdefensa\b)/i;
+// une renglones que el PDF/Word cortó a mitad de frase
+const GRADED = { test: t => GRADED_RE.test(t) && !NOT_GRADED.test(t) };
+function joinWrapped(text){
+  const lines = String(text||'').split('\n').map(l=>l.trim()).filter(Boolean);
+  const out = [];
+  for(const l of lines){
+    const bullet = /^[•·\-–*▪◦●]/.test(l);
+    const t = l.replace(/^[•·\-–*▪◦●]\s*/,'');
+    const prev = out[out.length-1];
+    const startsLower = /^[a-záéíóúñ(]/.test(t);
+    const isLabel = /^m[oó]dulo\s+\d+\s*\.?/i.test(t);
+    if(prev && !bullet && !isLabel && (startsLower || !/[.%:;!?)]$/.test(prev.t)) && !/^m[oó]dulo\s+\d+\s*\.\s*\S+$/i.test(prev.t) && !(GRADED.test(t) && /^[A-ZÁÉÍÓÚ]/.test(t))){
+      prev.t = (prev.t + ' ' + t).replace(/\s+/g,' ');
+    } else out.push({t, bullet});
+  }
+  return out;
+}
+function prettyCase(sj){
+  const t = String(sj||'').trim();
+  if(!t || t !== t.toUpperCase() || !/[A-ZÁÉÍÓÚ]{4}/.test(t)) return t;
+  return t.toLowerCase().replace(/(^|\s|\()(\p{L})/gu, (m,a,b)=>a+b.toUpperCase()).replace(/\b(i{1,3}|iv|v|vi{1,3}|ix|x)\b/gi, x=>x.toUpperCase()).replace(/\b(De|Del|La|Las|Los|El|Y|E|En|Para|Por|A)\b/g, x=>x.toLowerCase()).replace(/^\p{L}/u, x=>x.toUpperCase());
+}
+function cleanGraded(t){
+  let x = t.replace(/\s*[:.]\s*(sin puntaje|no tiene puntaje)\.?\s*$/i,'');
+  const v = x.match(/\.?\s*valor\s*:?\s*(\d+\s*%)/i);
+  if(v) x = x.replace(v[0],'').trim().replace(/[.:,]$/,'') + ' ('+v[1].replace(/\s/g,'')+')';
+  return clean(x);
+}
+// rows: [{n, tema, acts}] → tareas con sesión (las fechas se calculan después)
+function expandSessions(rows, subject){
+  const out = [];
+  for(const r of rows){
+    const tema = joinWrapped(r.tema), acts = joinWrapped(r.acts);
+    const seen = new Set(), graded = [], todo = [];
+    const keyOf = t => norm(t).replace(/[:.].*$/,'').replace(/\s+/g,' ').trim();
+    for(const it of acts.concat(tema)){
+      const t = it.t;
+      if(/^m[oó]dulo\s+\d+\s*\.\s*(lectura|actividad calificable)\s*$/i.test(t)) continue; // etiquetas, no tareas
+      if(GRADED.test(t)){ const k = keyOf(t); if(seen.has(k)) continue; seen.add(k); graded.push(cleanGraded(t)); }
+    }
+    for(const it of acts){ if(!GRADED.test(it.t)) todo.push(clean(it.t)); }
+    const topics = tema.filter(x=>!GRADED.test(x.t) && !/^m[oó]dulo\s+\d+\s*\.\s*(lectura|actividad calificable)\s*$/i.test(x.t)).map(x=>clean(x.t));
+    const modLabel = (tema.find(x=>/^m[oó]dulo\s+\d+/i.test(x.t))||{}).t || '';
+    const main = (tema.find(x=>x.bullet && !GRADED.test(x.t)) || {}).t || topics[0] || todo[0] || modLabel || '';
+    const label = r.label || 'Sesión';
+    if(todo.length || topics.length || !graded.length){
+      out.push({session:r.n, offset:0, kind:'session', title: label+' '+r.n+' · '+clean(main||'Clase'), subject,
+        desc: [modLabel ? clean(modLabel) : '', topics.length ? 'Temas:\n'+topics.map(t=>'• '+t).join('\n') : ''].filter(Boolean).join('\n\n'),
+        checklist: todo.filter(t=>t && norm(t)!==norm(main)), date:'', time:'', status:''});
+    }
+    for(const g of graded){
+      out.push({session:r.n, offset:'due', kind:'graded', title:g, subject, desc: label+' '+r.n + (modLabel ? ' · '+clean(modLabel) : ''), checklist:[], date:'', time:'', status:''});
+    }
+  }
+  return out;
+}
+const SESSION_HEAD = /\b(sesion|sesiones|semana|semanas|clase|week|leccion|unidad|n[°º.]?|#)\b/;
+
 /* ---------- Año predominante del documento ---------- */
 function detectYear(text){
   const c = {}; (String(text).match(/\b20\d{2}\b/g)||[]).forEach(y=>c[y]=(c[y]||0)+1);
@@ -342,10 +424,114 @@ async function readDocx(file, ctx){
   const lines = [...doc.body.querySelectorAll('h1,h2,h3,h4,p,li')].map(el=>(/^H\d$/.test(el.tagName)?'# ':'')+el.textContent.trim());
   return out.concat(parseText(lines.join('\n'), ctx, ''));
 }
+function mul(m, n){ return [m[0]*n[0]+m[2]*n[1], m[1]*n[0]+m[3]*n[1], m[0]*n[2]+m[2]*n[3], m[1]*n[2]+m[3]*n[3], m[0]*n[4]+m[2]*n[5]+m[4], m[1]*n[4]+m[3]*n[5]+m[5]]; }
+function apply(m, x, y){ return [m[0]*x+m[2]*y+m[4], m[1]*x+m[3]*y+m[5]]; }
+// Extrae las líneas (bordes de tabla) dibujadas en una página
+async function pageSegments(page){
+  const OPS = pdfjsLib.OPS; const ol = await page.getOperatorList();
+  let ctm = [1,0,0,1,0,0]; const stack = []; const H = [], V = [];
+  const seg = (a,b)=>{ const [x1,y1]=apply(ctm,a[0],a[1]), [x2,y2]=apply(ctm,b[0],b[1]);
+    if(Math.abs(y1-y2)<1.5 && Math.abs(x2-x1)>25) H.push({y:(y1+y2)/2, x1:Math.min(x1,x2), x2:Math.max(x1,x2)});
+    else if(Math.abs(x1-x2)<1.5 && Math.abs(y2-y1)>8) V.push({x:(x1+x2)/2, y1:Math.min(y1,y2), y2:Math.max(y1,y2)}); };
+  for(let i=0;i<ol.fnArray.length;i++){
+    const fn = ol.fnArray[i], a = ol.argsArray[i];
+    if(fn===OPS.save) stack.push(ctm.slice());
+    else if(fn===OPS.restore) ctm = stack.pop() || [1,0,0,1,0,0];
+    else if(fn===OPS.transform) ctm = mul(ctm, a);
+    else if(fn===OPS.constructPath){
+      const ops = a[0], args = a[1]; let k = 0, cur = null, start = null;
+      for(const op of ops){
+        if(op===OPS.rectangle){ const [x,y,w,h] = args.slice(k,k+4); k+=4;
+          const p1=[x,y],p2=[x+w,y],p3=[x+w,y+h],p4=[x,y+h];
+          if(Math.abs(h)<3){ seg([x,y+h/2],[x+w,y+h/2]); } else if(Math.abs(w)<3){ seg([x+w/2,y],[x+w/2,y+h]); } else { seg(p1,p2); seg(p2,p3); seg(p3,p4); seg(p4,p1); } }
+        else if(op===OPS.moveTo){ cur = [args[k],args[k+1]]; start = cur; k+=2; }
+        else if(op===OPS.lineTo){ const nx=[args[k],args[k+1]]; k+=2; if(cur) seg(cur,nx); cur = nx; }
+        else if(op===OPS.curveTo){ k+=6; } else if(op===OPS.curveTo2 || op===OPS.curveTo3){ k+=4; }
+        else if(op===OPS.closePath){ if(cur && start) seg(cur,start); cur = start; }
+      }
+    }
+  }
+  return {H, V};
+}
+function clusterVals(vals, tol){ vals = vals.slice().sort((a,b)=>a-b); const out=[]; for(const v of vals){ if(out.length && v-out[out.length-1].last<=tol){ const c=out[out.length-1]; c.sum+=v; c.n++; c.last=v; } else out.push({sum:v,n:1,last:v}); } return out.map(c=>c.sum/c.n); }
+// Lee una tabla con bordes: devuelve filas de celdas (texto con saltos de línea)
+async function pdfGridRows(pdf){
+  const all = [];
+  for(let p=1;p<=pdf.numPages;p++){
+    const page = await pdf.getPage(p);
+    const seg = await pageSegments(page);
+    const vp = page.getViewport({scale:1}); const PW = vp.width, PH = vp.height;
+    // descarta bordes de la página y líneas de adornos: se quedan las líneas largas de la tabla
+    const V = seg.V.filter(v=> v.x>4 && v.x<PW-4 && (v.y2-v.y1)<PH*0.95);
+    const H = seg.H.filter(h=> h.y>4 && h.y<PH-4 && (h.x2-h.x1)<PW*0.98);
+    if(H.length < 3 || V.length < 2) return null;
+    const groupLen = (arr, key, len) => { const g = new Map(); for(const a of arr){ const k = Math.round(a[key]/3); g.set(k, (g.get(k)||0) + len(a)); } return g; };
+    const vg = groupLen(V, 'x', v=>v.y2-v.y1); const vmax = Math.max(...vg.values());
+    const goodV = V.filter(v=> vg.get(Math.round(v.x/3)) >= vmax*0.08);
+    const tx1 = Math.min(...goodV.map(v=>v.x)), tx2 = Math.max(...goodV.map(v=>v.x));
+    const ty1 = Math.min(...goodV.map(v=>v.y1)), ty2 = Math.max(...goodV.map(v=>v.y2));
+    const inH = H.filter(h=> h.y>=ty1-2 && h.y<=ty2+2 && h.x2>tx1+5 && h.x1<tx2-5);
+    const hg = groupLen(inH, 'y', h=>Math.min(h.x2,tx2)-Math.max(h.x1,tx1));
+    const goodH = inH.filter(h=> hg.get(Math.round(h.y/3)) >= (tx2-tx1)*0.5);
+    const xs = clusterVals(goodV.map(v=>v.x), 3), ys = clusterVals(goodH.map(h=>h.y), 3).sort((a,b)=>b-a);
+    if(xs.length < 3 || ys.length < 3) return null;
+    const tc = await page.getTextContent();
+    const cells = new Map();
+    for(const it of tc.items){
+      if(!it.str || !it.str.trim()) continue;
+      const x = it.transform[4] + 1, y = it.transform[5] + 2;
+      const ci = xs.findIndex((v,i)=> i<xs.length-1 && x>=v && x<xs[i+1]);
+      const ri = ys.findIndex((v,i)=> i<ys.length-1 && y<=v && y>ys[i+1]);
+      if(ci<0 || ri<0) continue;
+      const key = ri+'|'+ci; if(!cells.has(key)) cells.set(key, []);
+      cells.get(key).push({x:it.transform[4], y:it.transform[5], w:it.width, s:it.str});
+    }
+    for(let ri=0; ri<ys.length-1; ri++){
+      const row = [];
+      for(let ci=0; ci<xs.length-1; ci++){
+        const items = (cells.get(ri+'|'+ci)||[]).sort((a,b)=> Math.abs(a.y-b.y)<3 ? a.x-b.x : b.y-a.y);
+        let txt = '', ly = null, end = null;
+        for(const it of items){
+          if(ly!==null && Math.abs(it.y-ly)>=3){ txt += '\n'; end = null; }
+          else if(end!==null){ const gap = it.x - end; txt += gap > 1.5 ? ' ' : ''; }
+          txt += it.s; ly = it.y; end = it.x + it.w;
+        }
+        row.push(txt.replace(/[ \t]+/g,' ').trim());
+      }
+      if(row.some(c=>c)) all.push({page:p, cells:row});
+    }
+  }
+  return all.length >= 3 ? all : null;
+}
 async function readPdf(file, ctx){
   await loadLib('pdf');
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'lib/pdf.worker.min.js';
   const pdf = await pdfjsLib.getDocument({data: new Uint8Array(await file.arrayBuffer())}).promise;
+  // 1) Si la tabla tiene bordes dibujados, se lee celda por celda
+  try{
+    const grid = await pdfGridRows(pdf);
+    if(grid){
+      const firstPage = await (await pdf.getPage(1)).getTextContent();
+      const topText = firstPage.items.map(i=>i.str).join(' ');
+      ctx.year = ctx.year || detectYear(topText);
+      // título del documento (texto fuera de la tabla, arriba) → materia
+      const titleLine = firstPage.items.filter(i=>i.str.trim()).sort((a,b)=>b.transform[5]-a.transform[5]);
+      const topY = titleLine.length ? titleLine[0].transform[5] : 0;
+      const title = titleLine.filter(i=>Math.abs(i.transform[5]-topY)<3).sort((a,b)=>a.transform[4]-b.transform[4]).map(i=>i.str).join(' ').replace(/\s*-\s*/g,'-').replace(/\s+/g,' ');
+      let subject = prettyCase(docTitleSubject(title.replace(/^([A-Z]{1,4}\d+[-–]\d+)\s*:?\s*/,'')) || '');
+      // filas: quita encabezados repetidos y une filas cortadas entre páginas
+      const rows = []; let header = null;
+      for(const g of grid){
+        if(isHeaderRow(g.cells, ctx) || (header && g.cells.join('|')===header.join('|'))){ header = header || g.cells; continue; }
+        if(rows.length && !g.cells[0] && g.page !== rows[rows.length-1].page){ const prev = rows[rows.length-1]; prev.cells = prev.cells.map((c,i)=> (c + '\n' + (g.cells[i]||'')).trim()); continue; }
+        rows.push({page:g.page, cells:g.cells});
+      }
+      if(header && rows.length){
+        const res = parseTable([header].concat(rows.map(r=>r.cells)), ctx, subject);
+        if(res.length) return res;
+      }
+    }
+  }catch(e){ /* si falla, se usa la lectura por renglones */ }
   const lines = [];
   for(let p=1; p<=pdf.numPages; p++){
     const page = await pdf.getPage(p);

@@ -51,6 +51,12 @@ App tipo Trello para organizar tus tareas de estudio. Es gratis, no tiene anunci
 - **Tus datos** se guardan en el dispositivo y, si conectas Google, también en tu Drive (gratis). Igual puedes descargar un respaldo en *Opciones*.
 - Si borras los datos de navegación del navegador, se borran las tareas. Por eso conviene tener un respaldo.
 
+## Compartir la app
+La app es para cualquier persona: solo comparte el enlace **https://gavg1797.github.io/mi-tablero/** (☰ → *Compartir la app*). Cada persona guarda sus tableros en su propio dispositivo y, si quiere, en su propio Google Drive. Nadie ve los datos de los demás.
+- **Enviar un tablero:** ☰ → *Enviar este tablero* crea un archivo `.tablero.json` para mandarlo por WhatsApp o correo. La otra persona lo abre con ☰ → *Importar tablero recibido* y se crea como un tablero nuevo.
+- **Cronogramas por sesiones o semanas sin fechas:** la app pregunta en qué sesión vas (o la fecha de la sesión 1) y calcula todas las fechas. Las lecturas quedan como checklist de cada sesión y las entregas y pruebas como tareas aparte con su porcentaje.
+- [Política de privacidad](privacidad.html)
+
 ## Varios tableros, columnas y zoom
 - Toca **☰** (o el nombre del tablero) para abrir la **barra de menú**: ahí cambias de tablero, creas uno nuevo (se abre en otra pestaña), lo renombras, lo copias, lo eliminas y sincronizas uno o todos los tableros con Google.
 - Cada tablero tiene su propia dirección (`…/mi-tablero/#b-xxxx`), así que puedes guardarlo como favorito o abrir varios a la vez.

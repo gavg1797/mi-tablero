@@ -125,6 +125,11 @@ table.preview td,table.preview th{border-bottom:1px solid var(--line);padding:6p
 .drop.over{background:var(--accent);color:#fff} .drop.over span{color:#fff}
 .drop-overlay{position:fixed;inset:0;z-index:300;background:rgba(79,70,229,.85);color:#fff;display:none;align-items:center;justify-content:center;font-size:22px;font-weight:600;pointer-events:none}
 .drop-overlay.show{display:flex}
+.steps{display:flex;flex-direction:column;gap:10px;margin-bottom:6px}
+.steps>div{display:flex;gap:12px;align-items:flex-start;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:10px 12px;font-size:14px}
+.steps>div>b{flex:0 0 28px;height:28px;border-radius:9px;background:var(--ink);color:var(--on-ink);display:grid;place-items:center;font-family:var(--display);font-stretch:68%;font-size:17px}
+.sess-box{background:var(--mint);border-radius:14px;padding:12px 14px;margin:10px 0}
+.sess-box .field input,.sess-box .field select{background:var(--surface)}
 .imp-sum{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
 .imp-sum .chip{font-size:12px;padding:3px 10px}
 .imp-opts{display:flex;flex-wrap:wrap;gap:10px;margin:6px 0 10px}
@@ -230,10 +235,18 @@ table.preview td,table.preview th{border-bottom:1px solid var(--line);padding:6p
     <button class="dl" id="dSync">☁️<span>Sincronizar ahora<small id="dSyncState">Con tu Google Drive</small></span></button>
     <button class="dl" id="dSyncAll">🔄<span>Sincronizar todos los tableros</span></button>
   </div>
+  <div class="dsec"><span class="eyebrow">Compartir</span>
+    <button class="dl" id="dShareApp">🔗<span>Compartir la app<small>Envía el enlace a tus compañeros</small></span></button>
+    <button class="dl" id="dSendBoard">📤<span>Enviar este tablero<small>Crea un archivo que otra persona puede importar</small></span></button>
+    <button class="dl" id="dImportBoard">📥<span>Importar tablero recibido<small>Abre un archivo .tablero.json como tablero nuevo</small></span></button>
+  </div>
   <div class="dsec"><span class="eyebrow">Más</span>
     <button class="dl" id="dImport">⬇️<span>Cargar cronograma</span></button>
     <button class="dl" id="dOptions">⚙️<span>Opciones<small>Notificaciones, calendario, respaldo…</small></span></button>
+    <button class="dl" id="dHelp">❓<span>Guía rápida</span></button>
+    <a class="dl" href="privacidad.html" style="text-decoration:none;color:inherit">🔒<span>Privacidad</span></a>
   </div>
+  <input type="file" id="fileBoard" accept=".json,application/json" hidden>
 </aside>
 <div class="pop" id="pop"></div>
 
@@ -338,6 +351,20 @@ table.preview td,table.preview th{border-bottom:1px solid var(--line);padding:6p
     <div class="field" style="margin-top:8px"><label for="sClient">ID de cliente OAuth de Google</label><input id="sClient" placeholder="xxxxxxxx.apps.googleusercontent.com" autocomplete="off" spellcheck="false"></div>
   </details>
   <div class="actions"><button class="btn danger" id="sOff">Desconectar</button><span class="spacer"></span><button class="btn" id="sClose">Cerrar</button><button class="btn primary" id="sConnect">Conectar con Google</button></div>
+</div></div>
+
+<!-- Bienvenida -->
+<div class="overlay" id="ovWelcome"><div class="sheet">
+  <span class="eyebrow">Bienvenido a</span>
+  <h2 style="font-size:38px;margin:2px 0 10px">Mi Tablero de Estudio</h2>
+  <p style="margin:0 0 14px;color:var(--muted)">Organiza tus tareas de estudio en columnas, gratis y sin crear cuentas. Funciona sin internet.</p>
+  <div class="steps">
+    <div><b>1</b><span><b>Carga tu cronograma</b> (Excel, Word, PDF o texto). La app entiende fechas, sesiones y materias y acomoda cada tarea según la fecha de hoy.</span></div>
+    <div><b>2</b><span><b>Marca con ✓</b> lo que terminas y arrastra las tareas entre columnas (en el celular, mantén presionada la tarjeta).</span></div>
+    <div><b>3</b><span><b>Conecta Google</b> (☁️, opcional) para tener tus tableros en todos tus dispositivos y pasar fechas a Google Calendar.</span></div>
+    <div><b>4</b><span><b>Instálala</b>: en iPhone, Compartir → “Agregar a pantalla de inicio”; en Android, menú ⋮ → “Instalar app”.</span></div>
+  </div>
+  <div class="actions"><button class="btn" id="wEmpty">Empezar vacío</button><span class="spacer"></span><button class="btn primary" id="wLoad">⬇ Cargar mi cronograma</button></div>
 </div></div>
 
 <!-- Confirmación / información -->
@@ -557,7 +584,7 @@ function updateBanner(){
   const late = pending.filter(c=>endOfDue(c) < new Date()).length;
   const today = pending.filter(c=>daysUntil(c)===0 && endOfDue(c) >= new Date()).length;
   const b = $('#banner');
-  if(!state.cards.length){ b.innerHTML = '👋 Empieza con <b>+</b> o carga tu cronograma (Excel, Word, PDF) con el botón <b>⬇ Cargar cronograma</b>, o arrastra el archivo aquí.'; b.classList.add('show'); return; }
+  if(!state.cards.length){ b.innerHTML = '👋 Empieza con <b>+</b> o carga tu cronograma (Excel, Word, PDF) con <b>⬇ Cargar cronograma</b>. Toca <b>☰</b> para tus tableros, compartir la app y más.'; b.classList.add('show'); return; }
   const parts=[]; if(today) parts.push(`<b>${today}</b> para hoy`); if(late) parts.push(`<b style="color:var(--bad)">${late}</b> vencida${late>1?'s':''}`);
   b.innerHTML = parts.length ? '📌 Tienes '+parts.join(' y ')+'.' : '';
   b.classList.toggle('show', parts.length>0);
@@ -874,7 +901,22 @@ function smartRemind(title){
   if(/examen|parcial|quiz|prueba|evaluacion|test\b|exposicion|presentacion|defensa|final\b|comprobacion/.test(t)) return '2880';
   return '1440';
 }
-let impItems = [], impSource = '';
+let impItems = [], impSource = '', impSess = null;
+// Cronogramas por sesiones: fechas calculadas a partir de la sesión 1
+function mondayOf(d){ const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); const wd = (x.getDay()+6)%7; x.setDate(x.getDate()-wd); return x; }
+function isoD(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function parseIso(s){ const [y,m,d] = s.split('-').map(Number); return new Date(y,m-1,d); }
+function applySessionDates(){
+  if(!impSess) return;
+  const st = parseIso(impSess.start), every = impSess.every, today = todayStr();
+  for(const o of impItems){
+    if(o.session==null || o.manualDate) continue;
+    const base = new Date(st.getFullYear(), st.getMonth(), st.getDate() + (o.session-1)*every);
+    const extra = (o.offset==='due' && impSess.due==='end') ? Math.max(0, every-1) : 0;
+    o.date = isoD(new Date(base.getFullYear(), base.getMonth(), base.getDate()+extra));
+    o.past = !!(o.date && o.date < today && o.status!=='done');
+  }
+}
 function setImpStatus(html){ $('#impStatus').innerHTML = html; }
 function subjectsKnown(){ return [...new Set(state.cards.map(c=>c.subject).filter(Boolean))]; }
 async function analyzeFile(file){
@@ -898,6 +940,15 @@ function showPreview(items){
     o.past = !!(o.date && o.date < today && o.status!=='done');
     return o;
   });
+  const hasSess = impItems.some(o=>o.session!=null);
+  if(hasSess){
+    const maxS = Math.max(...impItems.map(o=>o.session||0));
+    impSess = impSess || {start: isoD(mondayOf(new Date())), every:7, due:'end', current:1, max:maxS, label:/semana/i.test(impItems[0].title)?'semana':'sesión'};
+    impSess.max = maxS;
+    applySessionDates();
+    // tras calcular fechas, vuelve a revisar duplicados
+    const ex = new Set(state.cards.map(keyOf)); impItems.forEach(o=>{ o.dup = ex.has(keyOf(o)); if(o.dup) o.include=false; });
+  } else impSess = null;
   renderPreview();
 }
 function resolveCol(o){
@@ -921,7 +972,16 @@ function renderPreview(){
   const dups = impItems.filter(o=>o.dup).length, nodate = impItems.filter(o=>!o.date).length;
   setImpStatus('✅ Encontré <b>'+impItems.length+'</b> tareas en <b>'+esc(impSource)+'</b>. Revisa y corrige lo que quieras antes de importar.');
   const colOpts = sel => state.columns.map(c=>`<option value="${c.id}" ${c.id===sel?'selected':''}>${esc(c.name)}</option>`).join('');
-  box.innerHTML = `
+  const sessHtml = impSess ? `<div class="sess-box">
+      <b>📅 Este cronograma está organizado por ${impSess.label==='semana'?'semanas':'sesiones'} (1 a ${impSess.max}) y no trae fechas.</b>
+      <span class="hint" style="margin:2px 0 8px;display:block">Dime en qué ${impSess.label} vas y calculo todas las fechas.</span>
+      <div class="imp-opts" style="margin:0">
+        <div class="field"><label for="sessNow">¿Qué ${impSess.label} es esta semana?</label><input id="sessNow" type="number" min="1" max="${impSess.max}" value="${impSess.current}"></div>
+        <div class="field"><label for="sessStart">…o fecha de inicio de la ${impSess.label} 1</label><input id="sessStart" type="date" value="${impSess.start}"></div>
+        <div class="field"><label for="sessEvery">Frecuencia</label><select id="sessEvery"><option value="7">Una por semana</option><option value="14">Cada 2 semanas</option><option value="1">Una por día</option></select></div>
+        <div class="field"><label for="sessDue">Las entregas vencen</label><select id="sessDue"><option value="end">Al final de esa semana (domingo)</option><option value="same">El mismo día de la ${impSess.label}</option></select></div>
+      </div></div>` : '';
+  box.innerHTML = sessHtml + `
     <div class="imp-sum">${state.columns.filter(c=>counts[c.id]).map(c=>`<span class="chip ${c.done?'okc':''}">${esc(c.name)}: <b>${counts[c.id]}</b></span>`).join('')}
       ${nodate?`<span class="chip">Sin fecha: ${nodate}</span>`:''}${dups?`<span class="chip">Ya existían: ${dups}</span>`:''}</div>
     <div class="imp-opts">
@@ -943,17 +1003,30 @@ function renderPreview(){
           ${o.dup?'<span class="tag" style="background:var(--accent-2);color:inherit">Ya está en tu tablero</span>':''}${o.past && !o.dup?'<span class="tag">Fecha pasada</span>':''}
         </div>
       </div>`).join('')}</div>`;
+  if(impSess){ $('#sessEvery').value = String(impSess.every); $('#sessDue').value = impSess.due; }
   $('#impRemind').value = prevRem;
   if($('#impPast')) $('#impPast').value = prevPast;
   const n = active.length;
   $('#impDo').disabled = n===0; $('#impDo').textContent = n ? `Importar ${n} tarea${n>1?'s':''}` : 'Importar';
 }
 $('#impPreview').addEventListener('change', e=>{
+  if(impSess && ['sessNow','sessStart','sessEvery','sessDue'].includes(e.target.id)){
+    const id = e.target.id, v = e.target.value;
+    if(id==='sessEvery') impSess.every = +v;
+    if(id==='sessDue') impSess.due = v;
+    if(id==='sessNow' && +v>=1){ impSess.current = +v; const m = mondayOf(new Date()); impSess.start = isoD(new Date(m.getFullYear(), m.getMonth(), m.getDate() - (impSess.current-1)*impSess.every)); }
+    if(id==='sessStart' && v){ impSess.start = v; const diff = Math.floor((mondayOf(new Date()) - mondayOf(parseIso(v)))/86400000); impSess.current = Math.max(1, Math.floor(diff/impSess.every)+1); }
+    if(id==='sessEvery'){ const m = mondayOf(new Date()); impSess.start = isoD(new Date(m.getFullYear(), m.getMonth(), m.getDate() - (impSess.current-1)*impSess.every)); }
+    impItems.forEach(o=>{ o.colOverride=''; });
+    applySessionDates();
+    const ex = new Set(state.cards.map(keyOf)); impItems.forEach(o=>{ const d = ex.has(keyOf(o)); if(d && !o.dup){ o.include=false; } o.dup = d; });
+    renderPreview(); return;
+  }
   if(e.target.id==='impPast' || e.target.id==='impRemind'){ impItems.forEach(o=>{ if(e.target.id==='impPast') o.colOverride=''; }); renderPreview(); return; }
   const row = e.target.closest('.imp-row'); if(!row) return; const o = impItems[+row.dataset.i]; const f = e.target.dataset.f;
   if(f==='include') o.include = e.target.checked;
   else if(f==='col') o.colOverride = e.target.value;
-  else if(f==='date'){ o.date = e.target.value; o.past = !!(o.date && o.date < todayStr() && o.status!=='done'); o.colOverride=''; }
+  else if(f==='date'){ o.date = e.target.value; o.manualDate = true; o.past = !!(o.date && o.date < todayStr() && o.status!=='done'); o.colOverride=''; }
   else o[f] = e.target.value.trim();
   renderPreview();
 });
@@ -982,7 +1055,7 @@ $('#impDo').onclick = ()=>{
     if(!o.include || !o.title || (o.past && pm==='skip')) continue;
     const col = resolveCol(o); const done = !!(colById(col) && colById(col).done);
     const c = {id:uid(), created:Date.now(), title:o.title, subject:o.subject||'', date:o.date||'', time:o.time||'', desc:o.desc||'',
-      checklist:[], notified:{}, done, col, order: -1 - added.length,
+      checklist:(o.checklist||[]).map(t=>({id:uid(), text:String(t), done:false})), notified:{}, done, col, order: -1 - added.length,
       remind: o.date ? (rem==='smart' ? smartRemind(o.title) : rem) : ''};
     if(done) c.completedAt = Date.now();
     if(o.past && !done) c.notified = {[c.date+'|'+c.time+'|'+c.remind]: true};
@@ -1000,7 +1073,7 @@ $('#impDo').onclick = ()=>{
     download('cronograma.ics', buildIcs(pend), 'text/calendar');
   }, 'Descargar .ics');
 };
-$('#btnImport').onclick = ()=>{ $('#impPreview').innerHTML=''; setImpStatus(''); $('#impDo').disabled=true; $('#impDo').textContent='Importar'; show('#ovImport'); };
+$('#btnImport').onclick = ()=>{ impSess = null; $('#impPreview').innerHTML=''; setImpStatus(''); $('#impDo').disabled=true; $('#impDo').textContent='Importar'; show('#ovImport'); };
 $('#impCancel').onclick = closeAll;
 
 /* ---------- Menú ---------- */
@@ -1494,6 +1567,56 @@ document.addEventListener('keydown', e=>{
   if(e.key==='0'){ e.preventDefault(); setZoom(1); }
 });
 
+
+/* ---------- Compartir ---------- */
+const APP_URL = location.origin + location.pathname;
+$('#dShareApp').onclick = async ()=>{
+  closeDrawer();
+  const data = {title:'Mi Tablero de Estudio', text:'Organiza tus tareas de estudio: carga tu cronograma y la app lo acomoda solo. Gratis y funciona sin internet.', url: APP_URL};
+  try{ if(navigator.share){ await navigator.share(data); return; } }catch(e){ if(e && e.name==='AbortError') return; }
+  try{ await navigator.clipboard.writeText(APP_URL); toast('Enlace copiado: '+APP_URL); }
+  catch(e){ showInfo('Comparte este enlace', `<p>Envía esta dirección a quien quieras:</p><input value="${esc(APP_URL)}" readonly style="width:100%;padding:10px;border:1px solid var(--line);border-radius:10px" onclick="this.select()">`); }
+};
+$('#dSendBoard').onclick = async ()=>{
+  closeDrawer(); stamp();
+  const b = curBoard();
+  const copy = JSON.parse(JSON.stringify(state));
+  copy.cards.forEach(c=>{ delete c.notified; }); delete copy.settings.notify; copy.deleted = {};
+  const pack = {type:'mi-tablero-board', version:1, name:b.name, color:b.color, exported:new Date().toISOString(), board:copy};
+  const name = slug(b.name)+'.tablero.json';
+  const blob = new Blob([JSON.stringify(pack)], {type:'application/json'});
+  try{
+    const file = new File([blob], name, {type:'application/json'});
+    if(navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:b.name, text:'Te comparto mi tablero “'+b.name+'”. Ábrelo en '+APP_URL+' → ☰ → Importar tablero recibido.'}); return; }
+  }catch(e){ if(e && e.name==='AbortError') return; }
+  download(name, JSON.stringify(pack), 'application/json');
+  showInfo('Tablero listo para enviar', `Se descargó <b>${esc(name)}</b>. Envíalo por WhatsApp, correo o Drive. La otra persona abre <b>${esc(APP_URL)}</b> → ☰ → <b>Importar tablero recibido</b>.`);
+};
+$('#dImportBoard').onclick = ()=>{ closeDrawer(); $('#fileBoard').click(); };
+$('#fileBoard').onchange = e=>{
+  const f = e.target.files[0]; e.target.value=''; if(!f) return;
+  f.text().then(t=>{
+    const d = JSON.parse(t);
+    let st, name;
+    if(d && d.type==='mi-tablero-board' && d.board){ st = d.board; name = d.name || 'Tablero recibido'; }
+    else if(d && Array.isArray(d.cards) && Array.isArray(d.columns)){ st = d; name = 'Tablero importado'; }
+    else throw new Error('formato');
+    st = migrate(JSON.parse(JSON.stringify(st)));
+    const now = Date.now();
+    st.cards.forEach(c=>{ c.id = uid(); c.updatedAt = now; c.notified = {}; (c.checklist||[]).forEach(i=>i.id=uid()); });
+    st.deleted = {}; st.meta = {colsAt:now, setAt:now}; st.settings = Object.assign({notify:false, autoWeek:true}, st.settings||{});
+    const exists = boards.list.some(b=>b.name===name);
+    const id = createBoard(exists ? name+' (recibido)' : name, st);
+    scheduleIndexSync(); toast('Tablero “'+name+'” importado'); openBoard(id, true); renderBoardChrome();
+  }).catch(()=>toast('Ese archivo no es un tablero válido'));
+};
+
+/* ---------- Bienvenida ---------- */
+function showWelcome(){ show('#ovWelcome'); }
+$('#wEmpty').onclick = ()=>{ ui.welcomed = true; try{ localStorage.setItem(UI_KEY, JSON.stringify(ui)); }catch(e){} closeAll(); };
+$('#wLoad').onclick = ()=>{ ui.welcomed = true; try{ localStorage.setItem(UI_KEY, JSON.stringify(ui)); }catch(e){} closeAll(); $('#btnImport').click(); };
+$('#dHelp').onclick = ()=>{ closeDrawer(); showWelcome(); };
+
 /* ---------- Inicio ---------- */
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js').catch(()=>{});
@@ -1505,6 +1628,7 @@ if(isConnected() && navigator.onLine){ loadGIS().then(prepareTokenClient).catch(
 setInterval(()=>{ if(isConnected() && !document.hidden) syncNow(false); }, 120000);
 render();
 checkReminders();
+if(!ui.welcomed && !state.cards.length && boardId===MAIN_ID && boards.list.length<=1) setTimeout(showWelcome, 300);
 setInterval(()=>{ checkReminders(); }, 30000);
 setInterval(()=>{ if(!drag && !document.querySelector('.overlay.show')) render(); }, 5*60000);
 // Para pruebas
