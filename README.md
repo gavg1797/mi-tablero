@@ -86,7 +86,7 @@ Entiende fechas como `20/11`, `20/11/2026`, `2026-11-20`, `20 de noviembre`, `vi
 | Más adelante | Pendientes |
 | Marcada como hecha (o fecha pasada, si eliges “marcarlas como finalizadas”) | Finalizado |
 
-Cada día, al abrir la app, las tareas avanzan solas de columna a medida que se acercan sus fechas. Antes de importar ves una vista previa donde puedes corregir el nombre, la fecha, la materia o la columna. Las tareas que ya tienes no se duplican. Los recordatorios inteligentes avisan 2 días antes de los exámenes y 1 día antes del resto.
+Cada día, al abrir la app, las tareas avanzan solas de columna a medida que se acercan sus fechas. Antes de importar ves una vista previa donde puedes corregir el nombre, la fecha, la materia o la columna. Las tareas que ya tienes no se duplican. Cada tarea puede tener **hasta 4 recordatorios** (por ejemplo, 1 semana, 1 día y 1 hora antes). Al cargar un cronograma, los recordatorios inteligentes ponen a los exámenes 1 semana, 2 días y 1 día antes, y al resto 1 día antes.
 
 ## Formato del cronograma
 ```

@@ -152,6 +152,14 @@ body.locked .app, body.locked .fab, body.locked .drawer, body.locked .scrim{disp
 .help-btn{width:38px;height:38px;border-radius:50%;padding:0;justify-content:center;font-size:17px;font-weight:800}
 .fab-tx{display:none}
 @media (min-width:700px){ .fab{width:auto;padding:0 20px 0 16px;gap:8px;display:flex;align-items:center} .fab-tx{display:inline;font-weight:800;font-size:15px} }
+.rems{display:flex;flex-direction:column;gap:6px}
+.rem-row{display:flex;gap:6px;align-items:center}
+.rem-row select{flex:1;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:9px 10px}
+.rem-row .rem-x{flex:0 0 38px;height:38px;border:1px solid var(--line);background:var(--surface);border-radius:10px;font-size:15px}
+.rem-row .rem-ico{flex:0 0 22px;text-align:center}
+.rem-add{align-self:flex-start;margin-top:6px;font-size:13px;padding:6px 12px}
+.rem-max{font-weight:500;color:var(--muted)}
+.rem-empty{font-size:13px;color:var(--muted);padding:4px 2px}
 .lo-actions{display:flex;flex-direction:column;gap:8px;margin-top:12px}
 .lo-actions .btn{min-height:44px}
 .logout-btn{padding:7px 11px}
@@ -315,18 +323,9 @@ body.locked .app, body.locked .fab, body.locked .drawer, body.locked .scrim{disp
     <div class="field"><label for="cDate">Fecha</label><input id="cDate" type="date"></div>
     <div class="field"><label for="cTime">Hora (opcional)</label><input id="cTime" type="time"></div>
   </div>
-  <div class="field"><label for="cRemind">Recordatorio</label>
-    <select id="cRemind">
-      <option value="">Sin recordatorio</option>
-      <option value="0">A la hora</option>
-      <option value="15">15 minutos antes</option>
-      <option value="30">30 minutos antes</option>
-      <option value="60">1 hora antes</option>
-      <option value="120">2 horas antes</option>
-      <option value="1440">1 día antes</option>
-      <option value="2880">2 días antes</option>
-      <option value="10080">1 semana antes</option>
-    </select>
+  <div class="field"><label>Recordatorios <span class="rem-max">(hasta 4)</span></label>
+    <div class="rems" id="cRems"></div>
+    <button class="btn rem-add" id="cRemAdd" type="button">+ Agregar recordatorio</button>
   </div>
   <div class="field"><label for="cDesc">Notas</label><textarea id="cDesc" placeholder="Detalles, páginas, enlaces…"></textarea></div>
   <div class="field"><label>Checklist</label>
@@ -589,7 +588,7 @@ function cardHTML(c){
   const meta = [];
   if(c.subject) meta.push(`<span class="chip" style="background:${subjectColor(c.subject)}22;color:inherit">${esc(c.subject)}</span>`);
   if(c.date) meta.push(`<span class="chip ${dueClass(c)}">${dueClass(c)==='late'?'Vencida · ':''}${esc(fmtDue(c))}</span>`);
-  if(c.remind!=='' && c.remind!=null && c.date && !c.done) meta.push('<span title="Con recordatorio">🔔</span>');
+  { const rs = remsOf(c); if(rs.length && c.date && !c.done) meta.push(`<span title="Recordatorios: ${esc(rs.map(remText).join(', '))}">🔔${rs.length>1?'<b style="font-size:11px">'+rs.length+'</b>':''}</span>`); }
   if(total) meta.push(`<span>☑ ${done}/${total}</span>`);
   if(c.desc) meta.push('<span title="Tiene notas">📝</span>');
   return `<div class="card ${c.done?'done':''}" data-id="${c.id}" style="border-left-color:${subjectColor(c.subject)}">
@@ -797,7 +796,8 @@ function openEditor(id, colId){
   $('#cSubject').value = c ? (c.subject||'') : ($('#fSubject').value||'');
   $('#cDate').value = c ? (c.date||'') : '';
   $('#cTime').value = c ? (c.time||'') : '';
-  $('#cRemind').value = c ? (c.remind ?? '') : '1440';
+  draftRems = c ? remsOf(c) : ['1440'];
+  renderRems();
   $('#cDesc').value = c ? (c.desc||'') : '';
   $('#cCol').innerHTML = state.columns.map(col=>`<option value="${col.id}">${esc(col.name)}</option>`).join('');
   $('#cCol').value = c ? c.col : (colId || firstCol().id);
@@ -807,6 +807,23 @@ function openEditor(id, colId){
   show('#ovCard');
   if(!c) setTimeout(()=>$('#cTitle').focus(), 50);
 }
+let draftRems = [];
+function renderRems(){
+  const box = $('#cRems');
+  box.innerHTML = draftRems.length ? draftRems.map((v,i)=>`<div class="rem-row" data-i="${i}"><span class="rem-ico">🔔</span>
+      <select aria-label="Recordatorio ${i+1}">${REM_OPTS.map(([val,t])=>`<option value="${val}" ${val===v?'selected':''} ${val!==v && draftRems.includes(val)?'disabled':''}>${t}</option>`).join('')}</select>
+      <button class="rem-x" type="button" data-rm="${i}" aria-label="Quitar recordatorio">✕</button></div>`).join('')
+    : '<div class="rem-empty">Sin recordatorios.</div>';
+  $('#cRemAdd').hidden = draftRems.length >= MAX_REMS;
+}
+$('#cRems').addEventListener('change', e=>{ const row = e.target.closest('.rem-row'); if(row){ draftRems[+row.dataset.i] = e.target.value; renderRems(); } });
+$('#cRems').addEventListener('click', e=>{ const b = e.target.closest('[data-rm]'); if(b){ draftRems.splice(+b.dataset.rm, 1); renderRems(); } });
+$('#cRemAdd').onclick = ()=>{
+  if(draftRems.length >= MAX_REMS) return;
+  const pref = ['1440','60','2880','10080','0','15','30','120','180','4320'];
+  const next = pref.find(v=>!draftRems.includes(v)); if(next) draftRems.push(next);
+  renderRems();
+};
 function renderChecklist(){
   $('#cChecklist').innerHTML = draftChecklist.map((it,i)=>`<div class="cl-item ${it.done?'done':''}" data-i="${i}">
     <input type="checkbox" ${it.done?'checked':''} aria-label="Hecho"><input type="text" value="${esc(it.text)}">
@@ -827,7 +844,7 @@ function readEditor(){
     title: $('#cTitle').value.trim(),
     subject: $('#cSubject').value.trim(),
     date: $('#cDate').value, time: $('#cTime').value,
-    remind: $('#cRemind').value, desc: $('#cDesc').value.trim(),
+    reminders: [...new Set(draftRems)].slice(0, MAX_REMS), desc: $('#cDesc').value.trim(),
     col: $('#cCol').value,
     checklist: draftChecklist.filter(i=>i.text.trim())
   };
@@ -837,9 +854,10 @@ $('#cSave').onclick = ()=>{
   if(!v.title){ toast('Escribe el nombre de la tarea'); $('#cTitle').focus(); return; }
   let c = editing;
   if(!c){ c = {id:uid(), created:Date.now(), done:false}; state.cards.push(c); c.col = null; }
-  const changedTiming = c.date!==v.date || c.time!==v.time || c.remind!==v.remind;
+  const changedTiming = c.date!==v.date || c.time!==v.time || JSON.stringify(remsOf(c))!==JSON.stringify(remsOf({reminders:v.reminders}));
   const targetCol = v.col;
-  Object.assign(c, {title:v.title, subject:v.subject, date:v.date, time:v.time, remind:v.remind, desc:v.desc, checklist:v.checklist});
+  const rs = remsOf({reminders:v.reminders});
+  Object.assign(c, {title:v.title, subject:v.subject, date:v.date, time:v.time, reminders:rs, remind:rs[0]||'', desc:v.desc, checklist:v.checklist});
   if(changedTiming) c.notified = {};
   if(c.col !== targetCol) moveCard(c, targetCol, 1e9);
   autoWeek();
@@ -895,10 +913,10 @@ function buildIcs(cards){
     else L.push('DTSTART;VALUE=DATE:'+ymd(c.date),'DTEND;VALUE=DATE:'+ymd(addDays(c.date,1)));
     L.push(fold('SUMMARY:'+icsEsc((c.subject?'['+c.subject+'] ':'')+c.title)));
     L.push(fold('DESCRIPTION:'+icsEsc(details(c))));
-    if(c.remind!=='' && c.remind!=null){
-      let mins = +c.remind;
+    for(const r of remsOf(c)){
+      let mins = +r;
       // en eventos de todo el día, el aviso se calcula desde las 00:00; ajustamos a las 8:00 a.m.
-      if(!c.time) mins = Math.max(0, mins - 8*60);
+      if(!c.time) mins = mins - 8*60;
       L.push('BEGIN:VALARM','ACTION:DISPLAY',fold('DESCRIPTION:'+icsEsc(c.title)),'TRIGGER:'+(mins>=0?'-':'')+'PT'+Math.abs(mins)+'M','END:VALARM');
     }
     L.push('END:VEVENT');
@@ -935,24 +953,35 @@ async function sysNotify(title, body, tag){
     new Notification(title, {body, tag, icon:'icon-192.png'}); return true;
   }catch(e){ return false; }
 }
+const REM_OPTS = [['0','A la hora de la tarea'],['15','15 minutos antes'],['30','30 minutos antes'],['60','1 hora antes'],['120','2 horas antes'],['180','3 horas antes'],['1440','1 día antes'],['2880','2 días antes'],['4320','3 días antes'],['10080','1 semana antes']];
+const MAX_REMS = 4;
+// Recordatorios de una tarea (las tareas antiguas tenían uno solo en «remind»)
+function remsOf(c){
+  let r = Array.isArray(c.reminders) ? c.reminders : (c.remind!=='' && c.remind!=null ? [c.remind] : []);
+  r = [...new Set(r.map(String).filter(v=>v!=='' && !isNaN(+v)))].sort((a,b)=>+b-+a).slice(0, MAX_REMS);
+  return r;
+}
+function remText(m){ const o = REM_OPTS.find(x=>x[0]===String(m)); return o ? o[1] : (m+' min antes'); }
 function remindLabel(m){ m=+m; if(m===0) return 'ahora'; if(m<60) return `en ${m} min`; if(m<1440) return `en ${m/60} h`; return m===1440?'mañana':`en ${Math.round(m/1440)} días`; }
 function checkReminders(){
   const now = new Date(); let changed=false;
   for(const c of state.cards){
-    if(c.done || !c.date || c.remind==='' || c.remind==null) continue;
-    const at = dueAt(c); const trig = new Date(at.getTime() - (+c.remind)*60000);
+    if(c.done || !c.date) continue;
+    const rs = remsOf(c); if(!rs.length) continue;
+    const at = dueAt(c);
     c.notified = c.notified || {};
-    const key = c.date+'|'+c.time+'|'+c.remind;
-    if(now >= trig && !c.notified[key]){
-      // no avisar de cosas que vencieron hace más de 1 día
-      if(now - endOfDue(c) < 86400000){
-        const body = (c.subject?c.subject+' · ':'') + fmtDue(c);
-        const title = now >= at ? '⏰ '+c.title : '🔔 '+c.title+' ('+remindLabel(c.remind)+')';
-        sysNotify(title, body, c.id);
-        toast(title);
-      }
-      c.notified[key]=true; changed=true;
+    // de varios recordatorios ya vencidos, solo se avisa el más reciente
+    const due = rs.filter(r => now >= new Date(at.getTime() - (+r)*60000) && !c.notified[c.date+'|'+c.time+'|'+r]);
+    if(!due.length) continue;
+    const r = due.sort((a,b)=>+a-+b)[0];
+    if(now - endOfDue(c) < 86400000){
+      const body = (c.subject?c.subject+' · ':'') + fmtDue(c);
+      const title = now >= at ? '⏰ '+c.title : '🔔 '+c.title+' ('+remindLabel(r)+')';
+      sysNotify(title, body, c.id+'-'+r);
+      toast(title);
     }
+    for(const x of due) c.notified[c.date+'|'+c.time+'|'+x] = true;
+    changed = true;
   }
   if(changed) save();
 }
@@ -962,8 +991,8 @@ const nrm = x => String(x||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCa
 const keyOf = c => nrm(c.title)+'|'+(c.date||'');
 function smartRemind(title){
   const t = nrm(title);
-  if(/examen|parcial|quiz|prueba|evaluacion|test\b|exposicion|presentacion|defensa|final\b|comprobacion/.test(t)) return '2880';
-  return '1440';
+  if(/examen|parcial|quiz|prueba|evaluacion|test\b|exposicion|presentacion|defensa|final\b|comprobacion/.test(t)) return ['10080','2880','1440'];
+  return ['1440'];
 }
 let impItems = [], impSource = '', impSess = null;
 // Cronogramas por sesiones: fechas calculadas a partir de la sesión 1
@@ -1050,7 +1079,7 @@ function renderPreview(){
       ${nodate?`<span class="chip">Sin fecha: ${nodate}</span>`:''}${dups?`<span class="chip">Ya existían: ${dups}</span>`:''}</div>
     <div class="imp-opts">
       <div class="field"><label for="impRemind">Recordatorios</label>
-        <select id="impRemind"><option value="smart">Inteligentes (exámenes 2 días antes, resto 1 día)</option><option value="">Sin recordatorio</option><option value="60">1 hora antes</option><option value="1440">1 día antes</option><option value="2880">2 días antes</option></select></div>
+        <select id="impRemind"><option value="smart">Inteligentes (exámenes: 1 semana, 2 días y 1 día antes; resto: 1 día)</option><option value="">Sin recordatorio</option><option value="60">1 hora antes</option><option value="1440">1 día antes</option><option value="2880">2 días antes</option></select></div>
       ${pastN?`<div class="field"><label for="impPast">Tareas con fecha ya pasada (${pastN})</label>
         <select id="impPast"><option value="done">Marcarlas como finalizadas</option><option value="late">Dejarlas como vencidas (En progreso)</option><option value="skip">No importarlas</option></select></div>`:''}
     </div>
@@ -1120,9 +1149,10 @@ $('#impDo').onclick = ()=>{
     const col = resolveCol(o); const done = !!(colById(col) && colById(col).done);
     const c = {id:uid(), created:Date.now(), title:o.title, subject:o.subject||'', date:o.date||'', time:o.time||'', desc:o.desc||'',
       checklist:(o.checklist||[]).map(t=>({id:uid(), text:String(t), done:false})), notified:{}, done, col, order: -1 - added.length,
-      remind: o.date ? (rem==='smart' ? smartRemind(o.title) : rem) : ''};
+      reminders: o.date ? (rem==='smart' ? smartRemind(o.title) : (rem ? [rem] : [])) : []};
+    c.remind = c.reminders[0] || '';
     if(done) c.completedAt = Date.now();
-    if(o.past && !done) c.notified = {[c.date+'|'+c.time+'|'+c.remind]: true};
+    if(o.past && !done) c.notified = Object.fromEntries(c.reminders.map(r=>[c.date+'|'+c.time+'|'+r, true]));
     state.cards.push(c); added.push(c); counts[col]=(counts[col]||0)+1;
   }
   // reordena cada columna por fecha para que quede todo ordenado
