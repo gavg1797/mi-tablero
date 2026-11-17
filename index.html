@@ -1218,7 +1218,7 @@ function prepareTokenClient(){
     client_id: clientId(), scope: SCOPE,
     callback: r => {
       const p = pendingAuth; pendingAuth = null;
-      if(r && r.access_token){ sync.token = r.access_token; sync.exp = Date.now() + ((+r.expires_in||3600) - 120)*1000; sync.connected = true; saveSync(); fetchEmail(); p && p.res(); }
+      if(r && r.access_token){ sync.token = r.access_token; sync.exp = Date.now() + ((+r.expires_in||3600) - 120)*1000; sync.connected = true; saveSync(); p && p.res(); }
       else p && p.rej(new Error((r && r.error) || 'auth'));
     },
     error_callback: e => { const p = pendingAuth; pendingAuth = null; p && p.rej(new Error((e && e.type) || 'popup')); }
@@ -1231,8 +1231,44 @@ function requestToken(){
   if(!tc) return Promise.reject(new Error('gis'));
   return new Promise((res, rej)=>{ pendingAuth = {res, rej}; tc.requestAccessToken({prompt: sync.connected ? '' : 'consent'}); });
 }
-async function fetchEmail(){
-  try{ const r = await fetch('https://www.googleapis.com/drive/v3/about?fields=user(emailAddress)', {headers:{Authorization:'Bearer '+sync.token}}); if(r.ok){ const j = await r.json(); if(j.user && j.user.emailAddress){ sync.email = j.user.emailAddress; saveSync(); renderLogout(); } } }catch(e){}
+/* ---------- Varias cuentas en el mismo navegador ----------
+   Los tableros de cada cuenta de Google se guardan aparte: al conectar otra cuenta no se mezclan ni se borran. */
+const PROFILE_PREFIX = 'mtperfil:';
+const isDataKey = k => k===BOARDS_KEY || k==='mi-tablero-estudio-v1' || k.startsWith('mi-tablero-b-');
+async function fetchWho(){
+  try{
+    const r = await fetch('https://www.googleapis.com/drive/v3/about?fields=user(permissionId,emailAddress)', {headers:{Authorization:'Bearer '+sync.token}});
+    if(!r.ok) return null; const j = await r.json();
+    return j.user && j.user.permissionId ? {id:j.user.permissionId, email:j.user.emailAddress||''} : null;
+  }catch(e){ return null; }
+}
+function stashProfile(id){
+  const data = {}; for(const k of Object.keys(localStorage)) if(isDataKey(k)) data[k] = localStorage.getItem(k);
+  try{ localStorage.setItem(PROFILE_PREFIX+id, JSON.stringify({keys:data, fileIds:sync.fileIds||{}, email:(sync.owner||{}).email||'', saved:Date.now()})); }
+  catch(e){ return false; }
+  for(const k of Object.keys(data)) localStorage.removeItem(k);
+  return true;
+}
+function restoreProfile(id){
+  let p = null; try{ p = JSON.parse(localStorage.getItem(PROFILE_PREFIX+id)); }catch(e){}
+  if(!p) return {};
+  for(const [k,v] of Object.entries(p.keys||{})) try{ localStorage.setItem(k, v); }catch(e){}
+  localStorage.removeItem(PROFILE_PREFIX+id);
+  return p.fileIds || {};
+}
+// Comprueba qué cuenta está conectada. Devuelve 'ok', 'switched' (se cambió de espacio y la página se recarga) o 'fail'.
+async function ensureAccount(){
+  if(sync.owner && sync.whoTok === sync.token) return 'ok';
+  const who = await fetchWho(); if(!who) return 'fail';
+  sync.whoTok = sync.token; sync.email = who.email;
+  if(!sync.owner || sync.owner.id === who.id){ sync.owner = who; saveSync(); renderLogout(); return 'ok'; }
+  const prev = sync.owner;
+  if(!stashProfile(prev.id)){ toast('No hay espacio para guardar aparte los tableros de '+(prev.email||'la otra cuenta')); return 'fail'; }
+  sync.fileIds = restoreProfile(who.id); sync.owner = who; saveSync();
+  boardRemoved = true;
+  try{ sessionStorage.setItem('mt-switched', prev.email||'la otra cuenta'); }catch(e){}
+  location.replace(boardUrl(MAIN_ID)); setTimeout(()=>location.reload(), 100);
+  return 'switched';
 }
 async function gfetch(url, opts={}){
   const r = await fetch(url, Object.assign({}, opts, {headers: Object.assign({}, opts.headers||{}, {Authorization:'Bearer '+sync.token})}));
@@ -1287,6 +1323,9 @@ async function syncNow(interactive){
     catch(e){ setSyncStatus('needauth'); toast(e.message==='gis' ? 'No se pudo cargar Google. Revisa tu conexión.' : 'No se completó el inicio de sesión con Google'); return; }
   }
   if(syncing){ again = true; return; }
+  const acc = await ensureAccount();
+  if(acc==='switched') return;
+  if(acc==='fail'){ setSyncStatus('error'); if(interactive) toast('No se pudo comprobar tu cuenta de Google. Intenta de nuevo.'); return; }
   syncing = true; setSyncStatus('syncing');
   try{
     stamp();
@@ -1327,6 +1366,7 @@ function mergeBoards(a, b){
   return {list, deleted};
 }
 async function syncIndex(){
+  if(!sync.owner || sync.whoTok !== sync.token || boardRemoved) return;
   let id = sync.fileIds.__index || null, remote = null;
   if(id){ try{ remote = await driveRead(id); }catch(e){ if(String(e.message).startsWith('http 404')) id = null; else throw e; } }
   if(!id){ id = await driveFind(INDEX_FILE); if(id) remote = await driveRead(id); }
@@ -1360,6 +1400,7 @@ async function syncAllBoards(){
   setSyncStatus('syncing'); toast('Sincronizando todos los tableros…');
   try{
     await syncNow(false);
+    if(boardRemoved) return;
     for(const b of boards.list.slice()) if(b.id!==boardId) await syncOtherBoard(b.id);
     await syncIndex();
     setSyncStatus('ok'); renderBoardChrome(); toast('Todos los tableros sincronizados ✓');
@@ -1394,7 +1435,7 @@ $('#sConnect').onclick = ()=>{
 $('#sOff').onclick = ()=>{
   confirmBox('Desconectar de Google', 'Tus tareas se quedan en este dispositivo y en tu Drive, pero dejarán de sincronizarse aquí.', ()=>{
     try{ if(sync.token && window.google) google.accounts.oauth2.revoke(sync.token, ()=>{}); }catch(e){}
-    sync = {clientId: sync.clientId}; saveSync(); setSyncStatus('off'); toast('Desconectado');
+    sync = {clientId: sync.clientId, owner: sync.owner, fileIds: sync.fileIds}; saveSync(); setSyncStatus('off'); toast('Desconectado');
   });
 };
 $('#sClose').onclick = closeAll;
@@ -1645,7 +1686,7 @@ $('#dHelp').onclick = ()=>{ closeDrawer(); showWelcome(); };
 function renderLogout(){
   const on = isConnected();
   $('#btnLogout').hidden = !on; $('#dLogout').hidden = !on;
-  const who = sync.email ? sync.email : 'tu cuenta de Google';
+  const who = sync.email || (sync.owner||{}).email || 'tu cuenta de Google';
   $('#btnLogout').title = 'Cerrar sesión (' + who + ')';
   const w = $('#dLogoutWho'); if(w) w.textContent = sync.email || 'Desconecta tu cuenta de Google';
 }
@@ -1663,6 +1704,7 @@ async function doLogout(wipe){
   if(navigator.onLine && tokenValid()){
     try{
       stamp(); await syncNow(false);
+      if(boardRemoved && sync.whoTok !== sync.token) return;
       for(const b of boards.list.slice()) if(b.id!==boardId) await syncOtherBoard(b.id);
       await syncIndex();
     }catch(e){}
@@ -1673,7 +1715,7 @@ async function doLogout(wipe){
     try{ for(const k of Object.keys(localStorage)) if(k.startsWith('mi-tablero')) localStorage.removeItem(k); }catch(e){}
     try{ localStorage.setItem(SYNC_KEY, JSON.stringify({clientId: sync.clientId||''})); localStorage.setItem(UI_KEY, JSON.stringify({welcomed:true})); }catch(e){}
   } else {
-    sync = {clientId: sync.clientId}; saveSync();
+    sync = {clientId: sync.clientId, owner: sync.owner, fileIds: sync.fileIds}; saveSync();
   }
   location.replace(boardUrl(MAIN_ID));
   setTimeout(()=>location.reload(), 100);
@@ -1689,7 +1731,7 @@ if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
 setSyncStatus(isConnected() ? (tokenValid() ? 'idle' : 'needauth') : 'off');
-if(isConnected() && tokenValid() && !sync.email && navigator.onLine) fetchEmail();
+try{ const sw = sessionStorage.getItem('mt-switched'); if(sw){ sessionStorage.removeItem('mt-switched'); setTimeout(()=>toast('Los tableros de '+sw+' siguen guardados en este dispositivo. Vuelve a ellos conectando esa cuenta.'), 600); } }catch(e){}
 net();
 if(autoWeek()) save();
 if(isConnected() && navigator.onLine){ loadGIS().then(prepareTokenClient).catch(()=>{}); syncNow(false); }

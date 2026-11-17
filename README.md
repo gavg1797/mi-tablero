@@ -51,6 +51,9 @@ App tipo Trello, ideal para el trabajo: organiza tus tareas, proyectos y cronogr
 - **Tus datos** se guardan en el dispositivo y, si conectas Google, también en tu Drive (gratis). Igual puedes descargar un respaldo en *Opciones*.
 - Si borras los datos de navegación del navegador, se borran las tareas. Por eso conviene tener un respaldo.
 
+## Varias cuentas en el mismo navegador
+Cada cuenta de Google tiene sus propios tableros. Si en el mismo navegador se conecta otra cuenta, los tableros de la anterior se guardan aparte (no se borran ni se mezclan con el Drive de la otra persona) y vuelven al conectar de nuevo esa cuenta. **Cerrar sesión** (arriba, junto a la nube) guarda los cambios en Drive antes de salir.
+
 ## Compartir la app
 La app es para cualquier persona: solo comparte el enlace **https://gavg1797.github.io/mi-tablero/** (☰ → *Compartir la app*). Cada persona guarda sus tableros en su propio dispositivo y, si quiere, en su propio Google Drive. Nadie ve los datos de los demás.
 - **Enviar un tablero:** ☰ → *Enviar este tablero* crea un archivo `.tablero.json` para mandarlo por WhatsApp o correo. La otra persona lo abre con ☰ → *Importar tablero recibido* y se crea como un tablero nuevo.
