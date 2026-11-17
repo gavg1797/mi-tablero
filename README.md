@@ -38,10 +38,17 @@ App tipo Trello para organizar tus tareas de estudio. Es gratis, no tiene anunci
 - **Android (Chrome):** abre el enlace → menú ⋮ → **Instalar app**.
 - Después de instalarla, abre la app desde su ícono → ⋮ **Opciones → Activar notificaciones**.
 
+## Sincronización con Google (ya configurada)
+- App publicada en: https://gavg1797.github.io/mi-tablero/
+- Toca la **nube ☁️** arriba → **Conectar con Google** → elige tu cuenta. Como la app está en modo "Prueba", Google mostrará el aviso *"Google no verificó esta app"*: toca **Continuar** (es tu propia app).
+- Tus tareas se guardan en una carpeta oculta y privada de tu Google Drive y se combinan entre todos tus dispositivos. Sin internet sigues trabajando; al volver la conexión se sincroniza solo.
+- Si la nube se pone naranja, la sesión de Google expiró (pasa más o menos cada hora): tócala para reconectar.
+- Proyecto de Google Cloud: **Mi Tablero** (`mi-tablero-515000`). Solo las cuentas agregadas como *usuarios de prueba* (Google Auth Platform → Público) pueden conectarse.
+
 ## Importante: recordatorios y datos
 - **Recordatorios garantizados:** usa Google Calendar. Sus alertas llegan aunque la app esté cerrada, sin internet y en todos tus dispositivos.
 - **Notificaciones de la app:** llegan cuando la app está abierta o en segundo plano. Los teléfonos no permiten que una app web avise estando totalmente cerrada sin un servidor de pago; por eso los recordatorios fuertes van a Google Calendar.
-- **Tus datos se guardan en cada dispositivo** (no en la nube, por eso no cuesta nada). Para pasarlos a otro celular: *Opciones → Descargar respaldo* y en el otro, *Restaurar respaldo*. Haz un respaldo de vez en cuando.
+- **Tus datos** se guardan en el dispositivo y, si conectas Google, también en tu Drive (gratis). Igual puedes descargar un respaldo en *Opciones*.
 - Si borras los datos de navegación del navegador, se borran las tareas. Por eso conviene tener un respaldo.
 
 ## Formato del cronograma
