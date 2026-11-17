@@ -51,6 +51,12 @@ App tipo Trello para organizar tus tareas de estudio. Es gratis, no tiene anunci
 - **Tus datos** se guardan en el dispositivo y, si conectas Google, también en tu Drive (gratis). Igual puedes descargar un respaldo en *Opciones*.
 - Si borras los datos de navegación del navegador, se borran las tareas. Por eso conviene tener un respaldo.
 
+## Varios tableros, columnas y zoom
+- Toca **☰** (o el nombre del tablero) para abrir la **barra de menú**: ahí cambias de tablero, creas uno nuevo (se abre en otra pestaña), lo renombras, lo copias, lo eliminas y sincronizas uno o todos los tableros con Google.
+- Cada tablero tiene su propia dirección (`…/mi-tablero/#b-xxxx`), así que puedes guardarlo como favorito o abrir varios a la vez.
+- En cada columna, el botón **⋯** permite renombrar, ordenar por fecha, moverla, usarla como “Finalizado”, **ocultarla** o **eliminarla** (eliges a dónde mover sus tareas). Al final del tablero está **+ Añadir columna**.
+- **Zoom** con los botones − / + (o Ctrl + rueda del mouse / Ctrl + y Ctrl −). Toca el porcentaje para volver al 100 %.
+
 ## Cargar tu cronograma (lectura inteligente)
 Toca **⬇ Cargar cronograma** (o arrastra el archivo a la app) y elige tu archivo:
 - **Excel** (.xlsx, .xls, .ods) y **CSV**: reconoce las columnas por su encabezado (Fecha, Curso/Materia, Actividad/Tema, Hora, Estado…). Si no hay encabezados, las deduce. Respeta las celdas combinadas y usa el nombre de cada hoja como materia.

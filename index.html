@@ -14,65 +14,79 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Mi Tablero">
 <style>
+@font-face{font-family:'Manrope';src:url(fonts/manrope-latin-wght-normal.woff2) format('woff2-variations'),url(fonts/manrope-latin-wght-normal.woff2) format('woff2');font-weight:200 800;font-display:swap}
+@font-face{font-family:'Grotesk Display';src:url(fonts/archivo-latin-wdth-normal.woff2) format('woff2-variations'),url(fonts/archivo-latin-wdth-normal.woff2) format('woff2');font-weight:100 900;font-stretch:62% 125%;font-display:swap}
 :root{
-  --bg:#f4f5fb; --surface:#ffffff; --col:#e9ebf5; --text:#1b1d2e; --muted:#6b6f85; --line:#d9dcea;
-  --accent:#4f46e5; --accent-2:#eef0ff; --ok:#10b981; --warn:#f59e0b; --bad:#ef4444;
-  --shadow:0 1px 2px rgba(20,20,50,.08),0 2px 8px rgba(20,20,50,.06);
-  --radius:14px;
+  --bg:#f5f7fb; --surface:#ffffff; --col:#eef2f9; --text:#202128; --muted:#8b94a7; --line:#e3e7f0;
+  --accent:#476adb; --accent-2:#e9eef8; --mint:#dff1f3; --ink:#202128; --on-ink:#ffffff;
+  --ok:#00b881; --warn:#f2a33a; --bad:#e5484d;
+  --shadow:0 1px 2px rgba(32,33,40,.05),0 6px 18px rgba(32,33,40,.06);
+  --radius:18px;
+  --display:'Grotesk Display','Arial Narrow',Impact,sans-serif;
+  --hero:linear-gradient(180deg,#e6eeff 0%,#f5f7fb 260px);
 }
 @media (prefers-color-scheme:dark){
-  :root{ --bg:#0f1020; --surface:#1b1d33; --col:#15172a; --text:#eceefb; --muted:#9a9fc0; --line:#2b2e4a; --accent:#818cf8; --accent-2:#25284a; --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 12px rgba(0,0,0,.25); }
+  :root{ --bg:#111216; --surface:#1b1c22; --col:#16171c; --text:#eef0f6; --muted:#8b94a7; --line:#2a2c36; --accent:#7f9bf2; --accent-2:#222943; --mint:#173033; --ink:#eef0f6; --on-ink:#111216; --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.3); --hero:linear-gradient(180deg,#1a2140 0%,#111216 260px); }
 }
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
-button,input,select,textarea{font:inherit;color:inherit}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:15px/1.45 'Manrope',system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;letter-spacing:.01em;-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased}
+body{background:var(--hero) no-repeat,var(--bg)}
+button,input,select,textarea{font:inherit;color:inherit;letter-spacing:inherit}
 button{cursor:pointer}
+.display{font-family:var(--display);font-weight:900;font-stretch:68%;letter-spacing:.005em}
+.eyebrow{font-size:10.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
 .app{display:flex;flex-direction:column;height:100%;padding-top:env(safe-area-inset-top)}
-header{display:flex;align-items:center;gap:8px;padding:10px 14px;padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right));background:var(--surface);border-bottom:1px solid var(--line)}
-header h1{font-size:17px;margin:0;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header{display:flex;align-items:center;gap:8px;padding:12px 16px 8px;padding-left:max(12px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}
+.brand{display:flex;flex-direction:column;flex:1;min-width:0;line-height:1.05}
+.brand h1{font-family:var(--display);font-weight:900;font-stretch:68%;font-size:27px;margin:2px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
 header>*{flex-shrink:0}
-header>h1{flex-shrink:1}
-@media (max-width:420px){.hide-sm{display:none}}
-.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 12px;display:inline-flex;align-items:center;gap:6px}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+header>.brand{flex-shrink:1}
+@media (max-width:480px){.hide-sm{display:none}.brand h1{font-size:23px}}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 13px;display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:14px}
+.btn.primary{background:var(--ink);border-color:var(--ink);color:var(--on-ink)}
+.btn.blue{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.block{width:100%;justify-content:center}
 .btn.ghost{border-color:transparent;background:transparent}
 .btn.danger{color:var(--bad)}
 .btn:active{transform:scale(.97)}
-.icon-btn{border:none;background:transparent;padding:6px;border-radius:8px;line-height:0}
+.icon-btn{border:none;background:transparent;padding:7px;border-radius:10px;line-height:0;color:inherit}
 .icon-btn:hover{background:var(--accent-2)}
-.toolbar{display:flex;gap:8px;padding:8px 14px;align-items:center;flex-wrap:wrap;padding-left:max(14px,env(safe-area-inset-left))}
-.toolbar input,.toolbar select{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:7px 10px;min-width:0}
+.toolbar{display:flex;gap:8px;padding:4px 16px 10px;align-items:center;flex-wrap:wrap;padding-left:max(14px,env(safe-area-inset-left))}
+.toolbar input,.toolbar select{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 12px;min-width:0;font-weight:500}
 .toolbar input{flex:1;min-width:120px}
-.tabs{display:flex;background:var(--col);border-radius:10px;padding:3px}
-.tabs button{border:none;background:transparent;padding:6px 12px;border-radius:8px;color:var(--muted)}
+.tabs{display:flex;background:var(--accent-2);border-radius:10px;padding:3px}
+.tabs button{border:none;background:transparent;padding:6px 13px;border-radius:8px;color:var(--muted);font-weight:700}
 .tabs button.on{background:var(--surface);color:var(--text);box-shadow:var(--shadow)}
-.banner{margin:0 14px 6px;padding:8px 12px;border-radius:10px;background:var(--accent-2);font-size:14px;display:none}
+.banner{margin:0 16px 8px;padding:9px 14px;border-radius:12px;background:var(--mint);font-size:14px;display:none;font-weight:500}
 .banner.show{display:block}
 main{flex:1;min-height:0;position:relative}
-.board{height:100%;display:flex;gap:12px;overflow-x:auto;overflow-y:hidden;padding:6px 14px calc(14px + env(safe-area-inset-bottom));scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
-.column{flex:0 0 300px;max-width:86vw;background:var(--col);border-radius:var(--radius);display:flex;flex-direction:column;max-height:100%;scroll-snap-align:start}
+.board{height:100%;display:flex;gap:14px;overflow-x:auto;overflow-y:hidden;padding:6px 14px calc(14px + env(safe-area-inset-bottom));scroll-snap-type:x mandatory;scroll-padding-left:14px;-webkit-overflow-scrolling:touch}
+.column{flex:0 0 300px;max-width:86vw;background:var(--col);border:1px solid var(--line);border-radius:var(--radius);display:flex;flex-direction:column;max-height:100%;scroll-snap-align:start}
 @media (max-width:640px){.column{flex-basis:86vw}}
-.col-head{display:flex;align-items:center;gap:6px;padding:10px 10px 6px 12px}
-.col-head h2{font-size:14px;margin:0;flex:1;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
-.count{font-size:12px;background:var(--surface);border-radius:20px;padding:1px 8px;color:var(--muted)}
+.col-head{display:flex;align-items:center;gap:4px;padding:12px 8px 8px 14px}
+.col-head h2{font-family:var(--display);font-weight:900;font-stretch:68%;font-size:21px;margin:0;flex:1;letter-spacing:.01em;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.count{font-size:12px;font-weight:800;background:var(--surface);border-radius:20px;padding:1px 9px;color:var(--muted);border:1px solid var(--line)}
 .col-list{flex:1;overflow-y:auto;padding:4px 8px 8px;min-height:60px;display:flex;flex-direction:column;gap:8px}
-.add-in-col{margin:0 8px 8px;border:1px dashed var(--line);background:transparent;border-radius:10px;padding:8px;color:var(--muted);text-align:left}
-.card{background:var(--surface);border-radius:12px;padding:10px 10px 10px 8px;box-shadow:var(--shadow);display:flex;gap:8px;align-items:flex-start;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:pan-x pan-y;border-left:4px solid transparent}
+.add-in-col{margin:0 8px 8px;border:1px dashed var(--line);background:transparent;border-radius:10px;padding:9px;color:var(--muted);text-align:left;font-weight:700}
+.add-in-col:hover{background:var(--surface);color:var(--accent)}
+.add-col{flex:0 0 260px;align-self:flex-start;border:2px dashed var(--line);background:transparent;border-radius:var(--radius);padding:16px;color:var(--muted);font-weight:800;text-align:left}
+.add-col:hover{border-color:var(--accent);color:var(--accent)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:11px 11px 11px 9px;box-shadow:var(--shadow);display:flex;gap:8px;align-items:flex-start;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:pan-x pan-y;border-left:4px solid transparent}
 .card.done .title{text-decoration:line-through;color:var(--muted)}
 .card .body{flex:1;min-width:0}
-.card .title{font-weight:600;word-wrap:break-word}
+.card .title{font-weight:700;word-wrap:break-word;line-height:1.3}
 .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;font-size:12px;color:var(--muted)}
-.chip{border-radius:20px;padding:1px 8px;background:var(--accent-2);color:var(--text);white-space:nowrap}
-.chip.today{background:#fef3c7;color:#92400e}
-.chip.late{background:#fee2e2;color:#991b1b}
-.chip.okc{background:#d1fae5;color:#065f46}
+.chip{border-radius:20px;padding:2px 9px;background:var(--accent-2);color:var(--text);white-space:nowrap;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.chip.today{background:#fff1d6;color:#8a5300}
+.chip.late{background:#ffe3e3;color:#b42318}
+.chip.okc{background:var(--mint);color:#04785a}
 .check{flex:0 0 26px;height:26px;border-radius:50%;border:2px solid var(--line);background:transparent;display:grid;place-items:center;padding:0;margin-top:1px}
 .check svg{opacity:0}
 .card.done .check{background:var(--ok);border-color:var(--ok)}
 .card.done .check svg{opacity:1}
 .progress{height:4px;border-radius:4px;background:var(--line);margin-top:6px;overflow:hidden}
 .progress i{display:block;height:100%;background:var(--ok)}
-.placeholder{border:2px dashed var(--accent);border-radius:12px;background:var(--accent-2);flex:0 0 auto}
+.placeholder{border:2px dashed var(--accent);border-radius:14px;background:var(--accent-2);flex:0 0 auto}
 .drag-ghost{position:fixed;pointer-events:none;z-index:50;transform:rotate(2deg);opacity:.95;box-shadow:0 10px 30px rgba(0,0,0,.25)}
 .dragging-src{opacity:.25}
 body.dragging{overflow:hidden}
@@ -84,11 +98,11 @@ body.dragging{overflow:hidden}
 .overlay{position:fixed;inset:0;background:rgba(10,10,30,.45);display:none;align-items:flex-end;justify-content:center;z-index:100}
 .overlay.show{display:flex}
 @media (min-width:700px){.overlay{align-items:center}}
-.sheet{background:var(--surface);width:100%;max-width:560px;max-height:92vh;overflow-y:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
+.sheet{background:var(--surface);width:100%;max-width:560px;border:1px solid var(--line);max-height:92vh;overflow-y:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
 @media (min-width:700px){.sheet{border-radius:18px}}
-.sheet h2{margin:0 0 12px;font-size:18px}
+.sheet h2{margin:0 0 12px;font-family:var(--display);font-weight:900;font-stretch:68%;font-size:28px;letter-spacing:.01em}
 .field{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
-.field label{font-size:13px;color:var(--muted)}
+.field label{font-size:12px;color:var(--muted);font-weight:700}
 .field input,.field select,.field textarea{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:9px 10px;width:100%}
 .field textarea{min-height:70px;resize:vertical}
 .row{display:flex;gap:10px}
@@ -126,13 +140,47 @@ table.preview td,table.preview th{border-bottom:1px solid var(--line);padding:6p
 .imp-row input.t{font-weight:600;font-size:14px;width:100%}
 .imp-row input[type=date]{flex:0 0 140px} .imp-row input.s{flex:1 1 110px} .imp-row select{flex:1 1 120px}
 .imp-row .tag{font-size:11px;border-radius:10px;padding:1px 7px;background:#fee2e2;color:#991b1b;align-self:flex-start}
-.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#1b1d2e;color:#fff;padding:10px 16px;border-radius:12px;z-index:200;max-width:90vw;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#202128;font-weight:600;color:#fff;padding:10px 16px;border-radius:12px;z-index:200;max-width:90vw;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.show{opacity:1}
-.fab{position:fixed;right:max(18px,env(safe-area-inset-right));bottom:calc(18px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:50%;border:none;background:var(--accent);color:#fff;box-shadow:0 6px 18px rgba(79,70,229,.45);display:grid;place-items:center;z-index:40}
+.fab{position:fixed;right:max(18px,env(safe-area-inset-right));bottom:calc(18px + env(safe-area-inset-bottom));width:58px;height:58px;border-radius:18px;border:none;background:linear-gradient(135deg,#476adb,#7aa0ff);color:#fff;box-shadow:0 10px 24px rgba(71,106,219,.4);display:grid;place-items:center;z-index:40}
 .sync-btn{position:relative}
 .sync-btn i{position:absolute;right:3px;bottom:4px;width:9px;height:9px;border-radius:50%;background:var(--muted);border:2px solid var(--surface)}
 .sync-btn.ok i{background:var(--ok)} .sync-btn.needauth i,.sync-btn.error i{background:var(--warn)} .sync-btn.offline i{background:#9ca3af}
 .sync-btn.syncing svg{animation:pulse 1s infinite alternate} @keyframes pulse{to{opacity:.35}}
+/* Barra de menú lateral */
+.drawer{position:fixed;top:0;left:0;bottom:0;width:min(330px,88vw);background:var(--surface);border-right:1px solid var(--line);z-index:150;transform:translateX(-102%);transition:transform .22s ease;display:flex;flex-direction:column;padding:calc(14px + env(safe-area-inset-top)) 14px calc(14px + env(safe-area-inset-bottom));overflow-y:auto;box-shadow:0 0 40px rgba(32,33,40,.12)}
+.drawer.open{transform:none}
+.scrim{position:fixed;inset:0;background:rgba(17,18,22,.35);z-index:140;display:none}
+.scrim.show{display:block}
+.drawer-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.drawer-title{font-family:var(--display);font-weight:900;font-stretch:68%;font-size:30px;line-height:1;margin:4px 0 14px}
+.dsec{padding:12px 0;border-top:1px solid var(--line)}
+.dsec .eyebrow{display:block;margin:0 4px 8px}
+.blist{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+.bitem{display:flex;align-items:center;gap:8px;border-radius:12px;padding:4px 4px 4px 10px;border:1px solid transparent}
+.bitem:hover{background:var(--bg)}
+.bitem.cur{background:var(--accent-2);border-color:var(--line)}
+.bitem .bn{flex:1;min-width:0;border:none;background:none;text-align:left;padding:7px 0;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bitem .bc{font-size:11px;color:var(--muted);font-weight:700}
+.bdot{width:10px;height:10px;border-radius:3px;flex:0 0 auto}
+.dl{display:flex;width:100%;align-items:center;gap:10px;border:none;background:none;text-align:left;padding:10px 6px;border-radius:10px;font-weight:600}
+.dl:hover{background:var(--bg)}
+.dl small{display:block;color:var(--muted);font-weight:500;font-size:12px}
+.dl.danger{color:var(--bad)}
+.dl[disabled]{opacity:.45;cursor:not-allowed}
+.zoom{display:flex;align-items:center;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:2px}
+.zoom button{border:none;background:none;width:30px;height:30px;border-radius:8px;font-weight:800;font-size:16px;line-height:1}
+.zoom button:hover{background:var(--accent-2)}
+.zoom span{min-width:44px;text-align:center;font-size:12px;font-weight:800;cursor:pointer}
+.hidden-cols{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:7px 11px;font-weight:700;font-size:13px}
+/* Menús emergentes */
+.pop{position:fixed;z-index:180;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 16px 40px rgba(32,33,40,.18);padding:6px;min-width:220px;display:none}
+.pop.show{display:block}
+.pop button{display:flex;width:100%;gap:10px;align-items:center;border:none;background:none;text-align:left;padding:9px 10px;border-radius:9px;font-weight:600;font-size:14px}
+.pop button:hover{background:var(--bg)}
+.pop button.danger{color:var(--bad)}
+.pop hr{border:none;border-top:1px solid var(--line);margin:4px 0}
+.pop .ptitle{padding:6px 10px 4px}
 .offline-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);display:inline-block}
 .offline-dot.off{background:var(--warn)}
 </style>
@@ -140,8 +188,8 @@ table.preview td,table.preview th{border-bottom:1px solid var(--line);padding:6p
 <body>
 <div class="app">
   <header>
-    <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#4f46e5"/><rect x="5" y="5" width="4" height="10" rx="1.2" fill="#fff"/><rect x="10" y="5" width="4" height="7" rx="1.2" fill="#fff"/><rect x="15" y="5" width="4" height="5" rx="1.2" fill="#fff"/></svg>
-    <h1>Mi Tablero de Estudio</h1>
+    <button class="icon-btn" id="btnDrawer" aria-label="Abrir menú de tableros"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button>
+    <div class="brand"><span class="eyebrow">Mi Tablero de Estudio</span><h1 id="boardTitle" title="Cambiar de tablero">Mi Tablero</h1></div>
     <button class="icon-btn sync-btn" id="btnSync" title="Sincronizar con Google" aria-label="Sincronizar con Google"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 18a4.5 4.5 0 01-.6-8.96A6 6 0 0118 8.5a4 4 0 01-.5 9.5H7z"/></svg><i id="syncDot"></i></button>
     <button class="btn ghost" id="btnImport" title="Cargar cronograma (Excel, Word, PDF…)">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg><span class="hide-sm">Cargar cronograma</span></button>
@@ -153,6 +201,8 @@ table.preview td,table.preview th{border-bottom:1px solid var(--line);padding:6p
       <button id="tabAgenda">Agenda</button>
     </div>
     <input id="fSearch" type="search" placeholder="Buscar tarea…">
+    <div class="zoom" title="Zoom del tablero"><button id="zOut" aria-label="Alejar">−</button><span id="zVal" title="Restablecer">100%</span><button id="zIn" aria-label="Acercar">+</button></div>
+    <button class="hidden-cols" id="btnHiddenCols" hidden></button>
     <select id="fSubject"><option value="">Todas las materias</option></select>
   </div>
   <div class="banner" id="banner"></div>
@@ -161,6 +211,32 @@ table.preview td,table.preview th{border-bottom:1px solid var(--line);padding:6p
     <div class="agenda" id="agenda" hidden></div>
   </main>
 </div>
+<!-- Barra de menú: tableros -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-label="Menú de tableros">
+  <div class="drawer-head"><span class="eyebrow">Mi Tablero de Estudio</span><button class="icon-btn" id="drawerClose" aria-label="Cerrar menú">✕</button></div>
+  <div class="drawer-title">Tus tableros</div>
+  <div class="dsec" style="border-top:none;padding-top:0">
+    <div class="blist" id="boardList"></div>
+    <button class="btn primary block" id="dNew">+ Nuevo tablero</button>
+  </div>
+  <div class="dsec"><span class="eyebrow">Este tablero</span>
+    <button class="dl" id="dRename">✏️<span>Renombrar</span></button>
+    <button class="dl" id="dCopy">📄<span>Copiar tablero<small>Crea un duplicado y lo abre en otra pestaña</small></span></button>
+    <button class="dl" id="dCols">🗂️<span>Columnas<small>Mostrar, ocultar, ordenar o eliminar</small></span></button>
+    <button class="dl danger" id="dDelete">🗑️<span>Eliminar tablero</span></button>
+  </div>
+  <div class="dsec"><span class="eyebrow">Sincronización</span>
+    <button class="dl" id="dSync">☁️<span>Sincronizar ahora<small id="dSyncState">Con tu Google Drive</small></span></button>
+    <button class="dl" id="dSyncAll">🔄<span>Sincronizar todos los tableros</span></button>
+  </div>
+  <div class="dsec"><span class="eyebrow">Más</span>
+    <button class="dl" id="dImport">⬇️<span>Cargar cronograma</span></button>
+    <button class="dl" id="dOptions">⚙️<span>Opciones<small>Notificaciones, calendario, respaldo…</small></span></button>
+  </div>
+</aside>
+<div class="pop" id="pop"></div>
+
 <button class="fab" id="fab" aria-label="Nueva tarea"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg></button>
 
 <!-- Editor de tarea -->
@@ -280,7 +356,34 @@ table.preview td,table.preview th{border-bottom:1px solid var(--line);padding:6p
    Pega aquí tu ID de cliente de Google (Google Cloud → Credenciales → ID de cliente OAuth, tipo "Aplicación web").
    No es secreto: es seguro dejarlo en el código. */
 const CONFIG = { GOOGLE_CLIENT_ID: '2389007708-htodu01deph2uipu414143ktlbj4u6fi.apps.googleusercontent.com' };
-const KEY = 'mi-tablero-estudio-v1';
+/* ---------- Varios tableros ---------- */
+const BOARDS_KEY = 'mi-tablero-boards', MAIN_ID = 'principal';
+const boardKey = id => id===MAIN_ID ? 'mi-tablero-estudio-v1' : 'mi-tablero-b-'+id;
+const boardFile = id => id===MAIN_ID ? 'mi-tablero.json' : 'mi-tablero-'+id+'.json';
+const boardId = (()=>{ const m = location.hash.match(/^#b-([a-z0-9]+)$/i); return m ? m[1].toLowerCase() : MAIN_ID; })();
+const BOARD_COLORS = ['#476adb','#00b881','#f2a33a','#e5484d','#8e6cef','#13a8c4','#e85d9f','#202128'];
+function loadBoards(){
+  let b; try{ b = JSON.parse(localStorage.getItem(BOARDS_KEY)); }catch(e){}
+  b = b && Array.isArray(b.list) ? b : {list:[], deleted:{}};
+  b.deleted = b.deleted || {};
+  if(!b.list.some(x=>x.id===MAIN_ID)) b.list.unshift({id:MAIN_ID, name:'Mi Tablero', color:BOARD_COLORS[0], created:1, updatedAt:1});
+  if(boardId!==MAIN_ID && !b.list.some(x=>x.id===boardId) && !b.deleted[boardId]) b.list.push({id:boardId, name:'Tablero nuevo', color:BOARD_COLORS[b.list.length%BOARD_COLORS.length], created:Date.now(), updatedAt:Date.now()});
+  return b;
+}
+let boards = loadBoards();
+function saveBoards(){ try{ localStorage.setItem(BOARDS_KEY, JSON.stringify(boards)); }catch(e){} }
+saveBoards();
+const curBoard = () => boards.list.find(x=>x.id===boardId) || {id:boardId, name:'Tablero'};
+const boardUrl = id => location.pathname + (id===MAIN_ID ? '' : '#b-'+id);
+// Un tablero eliminado no se vuelve a abrir (ni a crear)
+let boardRemoved = boardId!==MAIN_ID && !!boards.deleted[boardId] && !boards.list.some(x=>x.id===boardId);
+function goTo(url){
+  const cur = location.pathname + location.hash;
+  if(url === cur) return;
+  location.href = url;                                   // cambio de #: el evento hashchange recarga la página
+}
+if(boardRemoved){ location.replace(boardUrl(MAIN_ID)); }
+const KEY = boardKey(boardId);
 const $ = (s, r=document) => r.querySelector(s);
 const uid = () => Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-5);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -326,6 +429,7 @@ function stamp(){
   snap = makeSnap();
 }
 function save(noSync){
+  if(boardRemoved) return;
   stamp();
   try{ localStorage.setItem(KEY, JSON.stringify(state)); }
   catch(e){ toast('No se pudo guardar en este dispositivo'); }
@@ -413,15 +517,17 @@ function render(){
 
   if(view==='board'){
     board.hidden=false; agenda.hidden=true;
-    board.innerHTML = state.columns.map(col=>{
+    board.innerHTML = state.columns.filter(col=>!col.hidden).map(col=>{
       const cards = state.cards.filter(c=>c.col===col.id && f(c)).sort((a,b)=>(a.order??0)-(b.order??0));
       return `<section class="column" data-col="${col.id}">
-        <div class="col-head"><h2>${col.done?'✓ ':''}${esc(col.name)}</h2><span class="count">${cards.length}</span>
-          <button class="icon-btn" data-act="sort" data-col="${col.id}" title="Ordenar por fecha" aria-label="Ordenar por fecha"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4v16m0 0l-3-3m3 3l3-3M14 6h7M14 12h5M14 18h3"/></svg></button></div>
+        <div class="col-head"><h2 title="${esc(col.name)}">${col.done?'✓ ':''}${esc(col.name)}</h2><span class="count">${cards.length}</span>
+          <button class="icon-btn" data-act="sort" data-col="${col.id}" title="Ordenar por fecha" aria-label="Ordenar por fecha"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4v16m0 0l-3-3m3 3l3-3M14 6h7M14 12h5M14 18h3"/></svg></button>
+          <button class="icon-btn" data-act="colmenu" data-col="${col.id}" title="Opciones de la columna" aria-label="Opciones de la columna"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button></div>
         <div class="col-list" data-col="${col.id}">${cards.map(cardHTML).join('')}</div>
         <button class="add-in-col" data-act="add" data-col="${col.id}">+ Agregar tarea</button>
       </section>`;
-    }).join('');
+    }).join('') + '<button class="add-col" data-act="addcol">+ Añadir columna</button>';
+    applyZoom();
   } else {
     board.hidden=true; agenda.hidden=false;
     const list = state.cards.filter(c=>f(c) && !c.done).sort((a,b)=>{
@@ -443,6 +549,8 @@ function render(){
     agenda.innerHTML = html || '<div class="empty">No hay tareas pendientes 🎉</div>';
   }
   updateBanner();
+  updateHiddenBtn();
+  renderBoardChrome();
 }
 function updateBanner(){
   const pending = state.cards.filter(c=>!c.done && c.date);
@@ -478,7 +586,7 @@ function moveCard(c, colId, index){
 const RANK = {pend:0, semana:1, prog:2};
 function targetColFor(c){
   if(c.done || c.status==='done') return doneCol().id;
-  const has = id => !!colById(id);
+  const has = id => !!colById(id) && !colById(id).hidden;
   if(c.status==='prog' && has('prog')) return 'prog';
   const n = c.date ? daysUntil(c) : null;
   if(n===null) return has('pend') ? 'pend' : firstCol().id;
@@ -507,6 +615,8 @@ document.addEventListener('click', e=>{
     const act = actEl.dataset.act;
     if(act==='toggle'){ const c = state.cards.find(x=>x.id===actEl.closest('.card').dataset.id); if(c){ setDone(c,!c.done); if(c.done) toast('¡Tarea finalizada! ✅'); save(); render(); } return; }
     if(act==='add'){ openEditor(null, actEl.dataset.col); return; }
+    if(act==='colmenu'){ openColMenu(actEl.dataset.col, actEl); return; }
+    if(act==='addcol'){ addColumnPrompt(); return; }
     if(act==='sort'){ const col=actEl.dataset.col; state.cards.filter(c=>c.col===col).sort((a,b)=>(dueAt(a)||8.64e15)-(dueAt(b)||8.64e15)).forEach((c,i)=>c.order=i); save(); render(); toast('Ordenado por fecha'); return; }
   }
   const card = e.target.closest('.card');
@@ -939,6 +1049,7 @@ function renderCols(){
     <input value="${esc(c.name)}" data-cname="${i}" style="border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:8px 10px">
     <button class="icon-btn" data-cup="${i}" style="flex:0 0 auto" aria-label="Subir">◀</button>
     <button class="icon-btn" data-cdown="${i}" style="flex:0 0 auto" aria-label="Bajar">▶</button>
+    <button class="icon-btn" data-chide="${i}" style="flex:0 0 auto" title="${c.hidden?'Mostrar':'Ocultar'}" aria-label="${c.hidden?'Mostrar':'Ocultar'}">${c.hidden?'🙈':'👁'}</button>
     <button class="icon-btn" data-cdel="${i}" style="flex:0 0 auto" aria-label="Eliminar">🗑</button></div>`).join('');
 }
 $('#colsList').addEventListener('input', e=>{ const i=e.target.dataset.cname; if(i!=null){ state.columns[+i].name = e.target.value || 'Sin nombre'; save(); } });
@@ -947,10 +1058,8 @@ $('#colsList').addEventListener('click', e=>{
   if(d.cdone!=null){ state.columns.forEach((c,i)=>c.done = i===+d.cdone); state.cards.forEach(c=>{ c.done = colById(c.col)?.done || false; }); }
   if(d.cup!=null && +d.cup>0){ const i=+d.cup; [state.columns[i-1],state.columns[i]]=[state.columns[i],state.columns[i-1]]; }
   if(d.cdown!=null && +d.cdown<state.columns.length-1){ const i=+d.cdown; [state.columns[i+1],state.columns[i]]=[state.columns[i],state.columns[i+1]]; }
-  if(d.cdel!=null){ const col=state.columns[+d.cdel]; const n=state.cards.filter(c=>c.col===col.id).length;
-    if(state.columns.length<=2) return toast('Debe haber al menos 2 columnas');
-    if(n) return toast(`Primero mueve las ${n} tareas de “${col.name}”`);
-    state.columns.splice(+d.cdel,1); if(!state.columns.some(c=>c.done)) state.columns[state.columns.length-1].done=true; }
+  if(d.chide!=null){ const col=state.columns[+d.chide]; if(!col.hidden && state.columns.filter(c=>!c.hidden).length<=1) return toast('Debe quedar al menos una columna visible'); col.hidden=!col.hidden; }
+  if(d.cdel!=null){ closeAll(); deleteColumn(state.columns[+d.cdel]); return; }
   save(); renderCols(); render();
 });
 $('#colAdd').onclick = ()=>{ const done = state.columns.findIndex(c=>c.done); const col={id:uid(), name:'Nueva columna'}; if(done>=0) state.columns.splice(done,0,col); else state.columns.push(col); save(); renderCols(); render(); };
@@ -984,8 +1093,10 @@ document.addEventListener('visibilitychange', ()=>{ if(!document.hidden){ if(aut
 /* ---------- Sincronización con Google Drive ---------- */
 const SYNC_KEY = 'mi-tablero-sync';
 const SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
-const FILE_NAME = 'mi-tablero.json';
+const FILE_NAME = boardFile(boardId);
+const INDEX_FILE = 'mi-tablero-tableros.json';
 let sync = (()=>{ try{ return JSON.parse(localStorage.getItem(SYNC_KEY)) || {}; }catch(e){ return {}; } })();
+sync.fileIds = sync.fileIds || {}; if(sync.fileId && !sync.fileIds[MAIN_ID]){ sync.fileIds[MAIN_ID] = sync.fileId; } delete sync.fileId;
 function saveSync(){ try{ localStorage.setItem(SYNC_KEY, JSON.stringify(sync)); }catch(e){} }
 const clientId = () => (sync.clientId || CONFIG.GOOGLE_CLIENT_ID || '').trim();
 const isConnected = () => !!(sync.connected && clientId());
@@ -1033,17 +1144,18 @@ async function gfetch(url, opts={}){
   if(!r.ok) throw new Error('http '+r.status);
   return r;
 }
-async function driveFind(){
-  const q = encodeURIComponent("name='"+FILE_NAME+"' and trashed=false");
+async function driveFind(name){
+  const q = encodeURIComponent("name='"+(name||FILE_NAME)+"' and trashed=false");
   const r = await gfetch('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&fields=files(id,modifiedTime)&orderBy=modifiedTime%20desc&q='+q);
   const j = await r.json(); return (j.files && j.files[0] && j.files[0].id) || null;
 }
 async function driveRead(id){ const r = await gfetch('https://www.googleapis.com/drive/v3/files/'+id+'?alt=media'); return r.json(); }
-async function driveWrite(id, data){
+async function driveDelete(id){ try{ await gfetch('https://www.googleapis.com/drive/v3/files/'+id, {method:'DELETE'}); }catch(e){} }
+async function driveWrite(id, data, name){
   const body = JSON.stringify(data);
   if(id){ await gfetch('https://www.googleapis.com/upload/drive/v3/files/'+id+'?uploadType=media', {method:'PATCH', headers:{'Content-Type':'application/json'}, body}); return id; }
   const bd = 'mtb' + uid();
-  const multi = '--'+bd+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+JSON.stringify({name:FILE_NAME, parents:['appDataFolder']})+'\r\n--'+bd+'\r\nContent-Type: application/json\r\n\r\n'+body+'\r\n--'+bd+'--';
+  const multi = '--'+bd+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+JSON.stringify({name:name||FILE_NAME, parents:['appDataFolder']})+'\r\n--'+bd+'\r\nContent-Type: application/json\r\n\r\n'+body+'\r\n--'+bd+'--';
   const r = await gfetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {method:'POST', headers:{'Content-Type':'multipart/related; boundary='+bd}, body:multi});
   return (await r.json()).id;
 }
@@ -1069,6 +1181,7 @@ function mergeStates(local, remote){
 function forCloud(st){ const c = JSON.parse(JSON.stringify(st)); delete c.settings.notify; c.cards.forEach(x=>delete x.notified); return c; }
 function scheduleSync(){ if(!isConnected()) return; clearTimeout(syncTimer); syncTimer = setTimeout(()=>syncNow(false), 2500); }
 async function syncNow(interactive){
+  if(boardRemoved) return;
   if(!clientId()){ if(interactive) openSync(); return; }
   if(!isConnected() && !interactive) return;
   if(!navigator.onLine){ setSyncStatus('offline'); if(interactive) toast('Sin internet: se sincronizará al volver la conexión'); return; }
@@ -1081,9 +1194,9 @@ async function syncNow(interactive){
   syncing = true; setSyncStatus('syncing');
   try{
     stamp();
-    let id = sync.fileId || null, remote = null;
+    let id = sync.fileIds[boardId] || null, remote = null;
     if(id){ try{ remote = await driveRead(id); }catch(e){ if(String(e.message).startsWith('http 404')){ id = null; } else throw e; } }
-    if(!id){ id = await driveFind(); if(id) remote = await driveRead(id); }
+    if(!id){ id = await driveFind(FILE_NAME); if(id) remote = await driveRead(id); }
     const before = JSON.stringify(state);
     const merged = remote ? mergeStates(state, remote) : state;
     // conserva datos propios de este dispositivo
@@ -1093,8 +1206,9 @@ async function syncNow(interactive){
     state = merged; snap = makeSnap();
     try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){}
     const cloud = forCloud(state);
-    if(!remote || JSON.stringify(cloud) !== JSON.stringify(forCloud(migrate(remote)))) id = await driveWrite(id, cloud);
-    sync.fileId = id; sync.lastSync = Date.now(); saveSync();
+    if(!remote || JSON.stringify(cloud) !== JSON.stringify(forCloud(migrate(remote)))) id = await driveWrite(id, cloud, FILE_NAME);
+    sync.fileIds[boardId] = id; sync.lastSync = Date.now(); saveSync();
+    await syncIndex();
     if(JSON.stringify(state) !== before && !drag && !document.querySelector('#ovCard.show')) render();
     setSyncStatus('ok');
     if(interactive) toast('Sincronizado con Google ✓');
@@ -1105,6 +1219,55 @@ async function syncNow(interactive){
     syncing = false;
     if(again){ again = false; setTimeout(()=>syncNow(false), 800); }
   }
+}
+// Índice de tableros en Drive (nombres, colores, eliminados)
+function mergeBoards(a, b){
+  const deleted = Object.assign({}, b.deleted||{});
+  for(const [k,t] of Object.entries(a.deleted||{})) deleted[k] = Math.max(t, deleted[k]||0);
+  const map = new Map();
+  for(const x of (b.list||[]).concat(a.list||[])){ const ex = map.get(x.id); if(!ex || (x.updatedAt||0) > (ex.updatedAt||0)) map.set(x.id, x); }
+  const list = [...map.values()].filter(x => x.id===MAIN_ID || !(deleted[x.id] && deleted[x.id] >= (x.updatedAt||0)));
+  list.sort((x,y)=> x.id===MAIN_ID ? -1 : y.id===MAIN_ID ? 1 : (x.created||0)-(y.created||0));
+  return {list, deleted};
+}
+async function syncIndex(){
+  let id = sync.fileIds.__index || null, remote = null;
+  if(id){ try{ remote = await driveRead(id); }catch(e){ if(String(e.message).startsWith('http 404')) id = null; else throw e; } }
+  if(!id){ id = await driveFind(INDEX_FILE); if(id) remote = await driveRead(id); }
+  const merged = remote ? mergeBoards(boards, remote) : boards;
+  const changedLocal = JSON.stringify(merged) !== JSON.stringify(boards);
+  boards = merged; saveBoards();
+  // borra copias locales de tableros eliminados en otro dispositivo
+  for(const k of Object.keys(boards.deleted)) if(k!==MAIN_ID) try{ localStorage.removeItem(boardKey(k)); }catch(e){}
+  if(!remote || JSON.stringify(remote) !== JSON.stringify(boards)) id = await driveWrite(id, boards, INDEX_FILE);
+  sync.fileIds.__index = id; saveSync();
+  if(changedLocal){ renderBoardChrome(); if(boards.deleted[boardId] && boardId!==MAIN_ID && !boards.list.some(x=>x.id===boardId)){ boardRemoved = true; toast('Este tablero se eliminó en otro dispositivo'); setTimeout(()=>location.replace(boardUrl(MAIN_ID)), 1200); } }
+}
+// Sincroniza un tablero que no está abierto en esta pestaña
+async function syncOtherBoard(id){
+  const key = boardKey(id); let local = null;
+  try{ local = JSON.parse(localStorage.getItem(key)); }catch(e){}
+  local = migrate(local && Array.isArray(local.cards) ? local : defaultState());
+  let fid = sync.fileIds[id] || null, remote = null;
+  if(fid){ try{ remote = await driveRead(fid); }catch(e){ if(String(e.message).startsWith('http 404')) fid = null; else throw e; } }
+  if(!fid){ fid = await driveFind(boardFile(id)); if(fid) remote = await driveRead(fid); }
+  const merged = remote ? mergeStates(local, remote) : local;
+  merged.settings.notify = local.settings.notify;
+  try{ localStorage.setItem(key, JSON.stringify(merged)); }catch(e){}
+  const cloud = forCloud(merged);
+  if(!remote || JSON.stringify(cloud) !== JSON.stringify(forCloud(migrate(remote)))) fid = await driveWrite(fid, cloud, boardFile(id));
+  sync.fileIds[id] = fid; saveSync();
+}
+async function syncAllBoards(){
+  if(!isConnected()){ openSync(); return; }
+  if(!tokenValid()){ try{ await requestToken(); }catch(e){ toast('No se completó el inicio de sesión con Google'); return; } }
+  setSyncStatus('syncing'); toast('Sincronizando todos los tableros…');
+  try{
+    await syncNow(false);
+    for(const b of boards.list.slice()) if(b.id!==boardId) await syncOtherBoard(b.id);
+    await syncIndex();
+    setSyncStatus('ok'); renderBoardChrome(); toast('Todos los tableros sincronizados ✓');
+  }catch(e){ setSyncStatus(e.message==='auth'?'needauth':'error'); toast('No se pudo sincronizar ('+e.message+')'); }
 }
 function openSync(){
   $('#sClient').value = clientId();
@@ -1146,6 +1309,191 @@ $('#btnSync').onclick = ()=>{
   syncNow(true);
 };
 
+
+/* ---------- Barra de menú y tableros ---------- */
+function openDrawer(){ renderBoardChrome(); $('#drawer').classList.add('open'); $('#scrim').classList.add('show'); }
+function closeDrawer(){ $('#drawer').classList.remove('open'); $('#scrim').classList.remove('show'); }
+$('#btnDrawer').onclick = openDrawer; $('#boardTitle').onclick = openDrawer;
+$('#drawerClose').onclick = closeDrawer; $('#scrim').onclick = ()=>{ closeDrawer(); closePop(); };
+function boardCount(id){
+  if(id===boardId) return state.cards.filter(c=>!c.done).length;
+  try{ const st = JSON.parse(localStorage.getItem(boardKey(id))); return st ? st.cards.filter(c=>!c.done).length : 0; }catch(e){ return 0; }
+}
+function renderBoardChrome(){
+  const cb = curBoard();
+  $('#boardTitle').textContent = cb.name;
+  document.title = cb.name + ' · Mi Tablero de Estudio';
+  $('#boardList').innerHTML = boards.list.map(b=>`<div class="bitem ${b.id===boardId?'cur':''}" data-bid="${b.id}">
+      <span class="bdot" style="background:${esc(b.color||'#476adb')}"></span>
+      <button class="bn" data-bact="go" title="Abrir aquí">${esc(b.name)}</button>
+      <span class="bc">${boardCount(b.id)}</span>
+      <button class="icon-btn" data-bact="tab" title="Abrir en otra pestaña" aria-label="Abrir en otra pestaña"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5"/></svg></button>
+    </div>`).join('');
+  $('#dDelete').disabled = boardId===MAIN_ID;
+  $('#dDelete').title = boardId===MAIN_ID ? 'El tablero principal no se puede eliminar (puedes renombrarlo o vaciarlo)' : '';
+  const ds = $('#dSyncState'); if(ds) ds.textContent = isConnected() ? ('Conectado' + (sync.lastSync ? ' · ' + new Date(sync.lastSync).toLocaleTimeString('es',{hour:'numeric',minute:'2-digit'}) : '')) : 'Conecta tu cuenta de Google';
+}
+$('#boardList').addEventListener('click', e=>{
+  const btn = e.target.closest('[data-bact]'); if(!btn) return;
+  const id = btn.closest('.bitem').dataset.bid;
+  if(btn.dataset.bact==='tab') openBoard(id, true);
+  else if(id!==boardId) openBoard(id, false); else closeDrawer();
+});
+function openBoard(id, newTab){
+  const url = boardUrl(id);
+  if(newTab){
+    const w = window.open(url, '_blank');
+    if(!w) goTo(url);
+    closeDrawer(); return;
+  }
+  if(url === location.pathname + location.hash || (id===MAIN_ID && !location.hash)) { closeDrawer(); return; }
+  goTo(url);
+}
+window.addEventListener('hashchange', ()=>{ const m = location.hash.match(/^#b-([a-z0-9]+)$/i); const id = m ? m[1].toLowerCase() : MAIN_ID; if(id!==boardId) location.reload(); });
+function newBoardState(){ const st = migrate(defaultState()); st.meta.colsAt = Date.now(); return st; }
+function createBoard(name, st){
+  const id = (Date.now().toString(36) + Math.random().toString(36).slice(2,6)).toLowerCase();
+  const now = Date.now();
+  boards.list.push({id, name, color: BOARD_COLORS[boards.list.length % BOARD_COLORS.length], created:now, updatedAt:now});
+  saveBoards();
+  try{ localStorage.setItem(boardKey(id), JSON.stringify(st)); }catch(e){ toast('No hay espacio para guardar el tablero'); }
+  return id;
+}
+function promptBox(title, label, value, onOk, okLabel){
+  confirmBox(title, `<div class="field" style="margin:6px 0 0"><label for="pbInput">${esc(label)}</label><input id="pbInput" value="${esc(value||'')}" autocomplete="off"></div>`, ()=>{ const v = ($('#pbInput').value||'').trim(); if(v) onOk(v); }, okLabel||'Guardar');
+  setTimeout(()=>{ const i=$('#pbInput'); if(i){ i.focus(); i.select(); i.onkeydown = e=>{ if(e.key==='Enter'){ e.preventDefault(); $('#cfYes').click(); } }; } }, 60);
+}
+$('#dNew').onclick = ()=>{ closeDrawer(); promptBox('Nuevo tablero', 'Nombre del tablero', '', name=>{
+  const id = createBoard(name, newBoardState());
+  scheduleIndexSync(); toast('Tablero “'+name+'” creado'); openBoard(id, true); renderBoardChrome();
+}, 'Crear y abrir'); };
+$('#dRename').onclick = ()=>{ closeDrawer(); const b = curBoard(); promptBox('Renombrar tablero', 'Nombre', b.name, name=>{
+  const x = boards.list.find(z=>z.id===boardId); if(x){ x.name = name; x.updatedAt = Date.now(); saveBoards(); scheduleIndexSync(); renderBoardChrome(); toast('Tablero renombrado'); }
+}); };
+$('#dCopy').onclick = ()=>{ closeDrawer(); promptBox('Copiar tablero', 'Nombre de la copia', 'Copia de '+curBoard().name, name=>{
+  stamp();
+  const st = JSON.parse(JSON.stringify(state)); const now = Date.now();
+  st.cards.forEach(c=>{ c.id = uid(); c.updatedAt = now; c.notified = {}; (c.checklist||[]).forEach(i=>i.id=uid()); });
+  st.deleted = {}; st.meta = {colsAt:now, setAt:now};
+  const id = createBoard(name, st);
+  scheduleIndexSync(); toast('Copia creada'); openBoard(id, true); renderBoardChrome();
+}, 'Copiar y abrir'); };
+$('#dDelete').onclick = ()=>{
+  if(boardId===MAIN_ID) return toast('El tablero principal no se puede eliminar');
+  closeDrawer();
+  const b = curBoard();
+  confirmBox('Eliminar tablero', `Se eliminará <b>“${esc(b.name)}”</b> con sus <b>${state.cards.length}</b> tareas en este dispositivo${isConnected()?' y en tu Google Drive':''}. No se puede deshacer.`, async ()=>{
+    boardRemoved = true; clearTimeout(syncTimer);
+    boards.deleted[boardId] = Date.now(); boards.list = boards.list.filter(x=>x.id!==boardId); saveBoards();
+    try{ localStorage.removeItem(KEY); }catch(e){}
+    if(isConnected() && tokenValid() && navigator.onLine){ try{ if(sync.fileIds[boardId]) await driveDelete(sync.fileIds[boardId]); delete sync.fileIds[boardId]; saveSync(); await syncIndex(); }catch(e){} }
+    location.replace(boardUrl(MAIN_ID));
+  }, 'Eliminar');
+};
+$('#dSync').onclick = ()=>{ closeDrawer(); if(!isConnected()) openSync(); else syncNow(true); };
+$('#dSyncAll').onclick = ()=>{ closeDrawer(); syncAllBoards(); };
+$('#dCols').onclick = ()=>{ closeDrawer(); renderCols(); show('#ovCols'); };
+$('#dImport').onclick = ()=>{ closeDrawer(); $('#btnImport').click(); };
+$('#dOptions').onclick = ()=>{ closeDrawer(); $('#btnMenu').click(); };
+let idxTimer = null;
+function scheduleIndexSync(){ if(!isConnected() || !tokenValid()) return; clearTimeout(idxTimer); idxTimer = setTimeout(()=>{ syncIndex().catch(()=>{}); }, 1500); }
+window.addEventListener('storage', e=>{ if(e.key===BOARDS_KEY){ boards = loadBoards(); renderBoardChrome(); if(boards.deleted[boardId] && boardId!==MAIN_ID && !boards.list.some(x=>x.id===boardId)){ boardRemoved = true; location.replace(boardUrl(MAIN_ID)); } } });
+
+/* ---------- Menús emergentes ---------- */
+const pop = $('#pop');
+function openPop(anchor, html){
+  pop.innerHTML = html; pop.classList.add('show');
+  const r = anchor.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
+  let left = Math.min(window.innerWidth - w - 8, Math.max(8, r.right - w)), top = r.bottom + 6;
+  if(top + h > window.innerHeight - 8) top = Math.max(8, r.top - h - 6);
+  pop.style.left = left+'px'; pop.style.top = top+'px';
+}
+function closePop(){ pop.classList.remove('show'); }
+document.addEventListener('pointerdown', e=>{ if(pop.classList.contains('show') && !pop.contains(e.target) && !e.target.closest('[data-act=colmenu],#btnHiddenCols')) closePop(); });
+window.addEventListener('resize', closePop);
+let popCol = null;
+function openColMenu(colId, anchor){
+  popCol = colId; const col = colById(colId); const i = state.columns.indexOf(col);
+  openPop(anchor, `<div class="ptitle eyebrow">${esc(col.name)}</div>
+    <button data-pact="rename">✏️ Renombrar</button>
+    <button data-pact="sort">↕️ Ordenar por fecha</button>
+    <button data-pact="add">➕ Agregar tarea aquí</button>
+    <hr>
+    <button data-pact="left" ${i===0?'disabled style="opacity:.4"':''}>◀ Mover a la izquierda</button>
+    <button data-pact="right" ${i===state.columns.length-1?'disabled style="opacity:.4"':''}>▶ Mover a la derecha</button>
+    <button data-pact="done">${col.done?'✓ Es la columna de finalizadas':'✓ Usar como “Finalizado”'}</button>
+    <hr>
+    <button data-pact="hide">👁️ Ocultar columna</button>
+    <button data-pact="del" class="danger">🗑️ Eliminar columna</button>`);
+}
+pop.addEventListener('click', e=>{
+  const b = e.target.closest('[data-pact],[data-show]'); if(!b || b.disabled) return;
+  if(b.dataset.show){ const c = colById(b.dataset.show); if(c){ c.hidden = false; save(); render(); toast('Columna “'+c.name+'” visible'); } closePop(); return; }
+  if(b.dataset.pact==='showall'){ state.columns.forEach(c=>c.hidden=false); save(); render(); closePop(); return; }
+  const col = colById(popCol); if(!col) return closePop();
+  const i = state.columns.indexOf(col); const act = b.dataset.pact; closePop();
+  if(act==='rename') promptBox('Renombrar columna', 'Nombre', col.name, v=>{ col.name = v; save(); render(); });
+  if(act==='sort'){ state.cards.filter(c=>c.col===col.id).sort((a,b)=>(dueAt(a)||8.64e15)-(dueAt(b)||8.64e15)).forEach((c,k)=>c.order=k); save(); render(); }
+  if(act==='add') openEditor(null, col.id);
+  if(act==='left' && i>0){ [state.columns[i-1], state.columns[i]] = [state.columns[i], state.columns[i-1]]; save(); render(); }
+  if(act==='right' && i<state.columns.length-1){ [state.columns[i+1], state.columns[i]] = [state.columns[i], state.columns[i+1]]; save(); render(); }
+  if(act==='done'){ state.columns.forEach(c=>c.done = c===col); state.cards.forEach(c=>{ c.done = !!(colById(c.col)||{}).done; }); save(); render(); toast('“'+col.name+'” es ahora la columna de finalizadas'); }
+  if(act==='hide'){
+    if(state.columns.filter(c=>!c.hidden).length<=1) return toast('Debe quedar al menos una columna visible');
+    col.hidden = true; save(); render(); toast('Columna oculta. Puedes mostrarla desde el botón “ocultas”.');
+  }
+  if(act==='del') deleteColumn(col);
+});
+function deleteColumn(col){
+  if(state.columns.length<=1) return toast('Debe quedar al menos una columna');
+  const cards = state.cards.filter(c=>c.col===col.id);
+  const others = state.columns.filter(c=>c!==col);
+  const finish = (moveTo)=>{
+    if(moveTo==='__del'){ state.cards = state.cards.filter(c=>c.col!==col.id); }
+    else if(moveTo){ cards.forEach(c=>{ moveCard(c, moveTo, 1e9); }); }
+    state.columns = others;
+    if(!state.columns.some(c=>c.done)){ state.columns[state.columns.length-1].done = true; }
+    state.cards.forEach(c=>{ c.done = !!(colById(c.col)||{}).done; });
+    save(); render(); toast('Columna “'+col.name+'” eliminada');
+  };
+  if(!cards.length) return confirmBox('Eliminar columna', `Se eliminará la columna <b>“${esc(col.name)}”</b>.`, ()=>finish(null), 'Eliminar');
+  confirmBox('Eliminar columna', `La columna <b>“${esc(col.name)}”</b> tiene <b>${cards.length}</b> tarea${cards.length>1?'s':''}. ¿Qué hago con ellas?
+    <div class="field" style="margin-top:10px"><select id="mvTo">${others.map(c=>`<option value="${c.id}">Moverlas a “${esc(c.name)}”</option>`).join('')}<option value="__del">Eliminarlas también</option></select></div>`,
+    ()=>finish($('#mvTo').value), 'Eliminar columna');
+}
+function addColumnPrompt(){
+  promptBox('Nueva columna', 'Nombre de la columna', '', name=>{
+    const col = {id:uid(), name}; const d = state.columns.findIndex(c=>c.done);
+    if(d>=0) state.columns.splice(d,0,col); else state.columns.push(col);
+    save(); render(); setTimeout(()=>{ const el = board.querySelector(`.column[data-col="${col.id}"]`); el && el.scrollIntoView({behavior:'smooth', inline:'center'}); }, 50);
+  }, 'Añadir');
+}
+function updateHiddenBtn(){
+  const h = state.columns.filter(c=>c.hidden), b = $('#btnHiddenCols');
+  b.hidden = !h.length || view!=='board'; b.textContent = '👁 ' + h.length + ' oculta' + (h.length>1?'s':'');
+}
+$('#btnHiddenCols').onclick = e=>{
+  const h = state.columns.filter(c=>c.hidden);
+  openPop(e.currentTarget, `<div class="ptitle eyebrow">Columnas ocultas</div>${h.map(c=>`<button data-show="${c.id}">👁️ Mostrar “${esc(c.name)}”</button>`).join('')}${h.length>1?'<hr><button data-pact="showall">Mostrar todas</button>':''}`);
+};
+
+/* ---------- Zoom ---------- */
+const UI_KEY = 'mi-tablero-ui';
+let ui = (()=>{ try{ return JSON.parse(localStorage.getItem(UI_KEY)) || {}; }catch(e){ return {}; } })();
+ui.zoom = ui.zoom || 1;
+function applyZoom(){ board.style.zoom = ui.zoom; $('#zVal').textContent = Math.round(ui.zoom*100)+'%'; }
+function setZoom(z){ ui.zoom = Math.round(Math.min(1.6, Math.max(0.5, z))*10)/10; try{ localStorage.setItem(UI_KEY, JSON.stringify(ui)); }catch(e){} applyZoom(); }
+$('#zIn').onclick = ()=>setZoom(ui.zoom+0.1);
+$('#zOut').onclick = ()=>setZoom(ui.zoom-0.1);
+$('#zVal').onclick = ()=>setZoom(1);
+board.addEventListener('wheel', e=>{ if(e.ctrlKey || e.metaKey){ e.preventDefault(); setZoom(ui.zoom + (e.deltaY<0?0.1:-0.1)); } }, {passive:false});
+document.addEventListener('keydown', e=>{
+  if(!(e.ctrlKey||e.metaKey) || e.target.closest('input,textarea')) return;
+  if(e.key==='='||e.key==='+'){ e.preventDefault(); setZoom(ui.zoom+0.1); }
+  if(e.key==='-'){ e.preventDefault(); setZoom(ui.zoom-0.1); }
+  if(e.key==='0'){ e.preventDefault(); setZoom(1); }
+});
+
 /* ---------- Inicio ---------- */
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js').catch(()=>{});
@@ -1160,7 +1508,7 @@ checkReminders();
 setInterval(()=>{ checkReminders(); }, 30000);
 setInterval(()=>{ if(!drag && !document.querySelector('.overlay.show')) render(); }, 5*60000);
 // Para pruebas
-window.__tablero = {get state(){return state;}, buildIcs, gcalUrl, mergeStates, migrate, targetColFor, showPreview, analyzeFile};
+window.__tablero = {get state(){return state;}, get boards(){return boards;}, mergeBoards, buildIcs, gcalUrl, mergeStates, migrate, targetColFor, showPreview, analyzeFile};
 })();
 </script>
 </body>
