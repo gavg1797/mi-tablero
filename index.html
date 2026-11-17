@@ -81,6 +81,7 @@ main{flex:1;min-height:0;position:relative}
 .chip{border-radius:20px;padding:2px 9px;background:var(--accent-2);color:var(--text);white-space:nowrap;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .chip.today{background:#fff1d6;color:#8a5300}
 .chip.late{background:#ffe3e3;color:#b42318}
+.chip.rep{background:#e8eefc;color:#2f4fb5}
 .chip.okc{background:var(--mint);color:#04785a}
 .check{flex:0 0 26px;height:26px;border-radius:50%;border:2px solid var(--line);background:transparent;display:grid;place-items:center;padding:0;margin-top:1px}
 .check svg{opacity:0}
@@ -323,6 +324,11 @@ body.locked .app, body.locked .fab, body.locked .drawer, body.locked .scrim{disp
     <div class="field"><label for="cDate">Fecha</label><input id="cDate" type="date"></div>
     <div class="field"><label for="cTime">Hora (opcional)</label><input id="cTime" type="time"></div>
   </div>
+  <div class="row">
+    <div class="field"><label for="cRepeat">Repetir</label><select id="cRepeat">
+      <option value="">No se repite</option><option value="semanal">Cada semana</option><option value="quincenal">Cada 15 días (quincenal)</option><option value="mensual">Cada mes</option><option value="anual">Cada año</option></select></div>
+    <div class="field" id="cUntilF"><label for="cUntil">Hasta (opcional)</label><input id="cUntil" type="date"></div>
+  </div>
   <div class="field"><label>Recordatorios <span class="rem-max">(hasta 4)</span></label>
     <div class="rems" id="cRems"></div>
     <button class="btn rem-add" id="cRemAdd" type="button">+ Agregar recordatorio</button>
@@ -534,6 +540,44 @@ const colById = id => state.columns.find(c=>c.id===id);
 
 /* ---------- Fechas ---------- */
 function todayStr(d=new Date()){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+/* ---------- Tareas que se repiten ----------
+   Al finalizar una tarea repetitiva se crea sola la siguiente, con la fecha que le toca. */
+const REPEAT = {semanal:'Semanal', quincenal:'Quincenal', mensual:'Mensual', anual:'Anual'};
+const REPEAT_LONG = {semanal:'cada semana', quincenal:'cada 15 días', mensual:'cada mes', anual:'cada año'};
+const RRULE = {semanal:'FREQ=WEEKLY', quincenal:'FREQ=WEEKLY;INTERVAL=2', mensual:'FREQ=MONTHLY', anual:'FREQ=YEARLY'};
+function nextDate(date, rep, day){
+  const [y,m,d] = date.split('-').map(Number);
+  if(rep==='semanal') return todayStr(new Date(y,m-1,d+7));
+  if(rep==='quincenal') return todayStr(new Date(y,m-1,d+14));
+  const add = rep==='anual' ? 12 : 1, want = day || d;
+  const t = (m-1) + add, ny = y + Math.floor(t/12), nm = t % 12;
+  return todayStr(new Date(ny, nm, Math.min(want, new Date(ny, nm+1, 0).getDate())));   // 31 de enero → 28/29 de febrero → 31 de marzo
+}
+const nextSig = n => JSON.stringify([n.title, n.date, n.time, n.desc, n.subject, (n.checklist||[]).map(i=>[i.text,i.done])]);
+function spawnNext(c){
+  if(!c.repeat || !REPEAT[c.repeat] || !c.date) return null;
+  if(c.nextId && state.cards.some(x=>x.id===c.nextId)) return null;
+  const today = todayStr();
+  let d = nextDate(c.date, c.repeat, c.repDay), guard = 0;
+  while(d < today && guard++ < 600) d = nextDate(d, c.repeat, c.repDay);   // si se finalizó tarde, salta a la próxima fecha que aún no pasó
+  if(c.repUntil && d > c.repUntil){ setTimeout(()=>toast('🔁 Era la última repetición de esta tarea'), 1300); return null; }
+  const rs = remsOf(c);
+  const n = {id:uid(), created:Date.now(), done:false, title:c.title, subject:c.subject||'', desc:c.desc||'', date:d, time:c.time||'',
+    reminders:rs, remind:rs[0]||'', checklist:(c.checklist||[]).map(i=>({id:uid(), text:i.text, done:false})),
+    repeat:c.repeat, repDay:c.repDay, repUntil:c.repUntil||'', series:c.series||c.id, notified:{}};
+  n.col = targetColFor(n); if(!colById(n.col) || colById(n.col).done) n.col = firstCol().id;
+  n.order = maxOrder(n.col)+1;
+  state.cards.push(n); c.nextId = n.id; c.nextSig = nextSig(n);
+  setTimeout(()=>toast('🔁 Siguiente programada: '+fmtDue(n)), 1300);
+  return n;
+}
+// Si se desmarca una tarea finalizada, se quita la repetición que se había creado (solo si no se ha tocado)
+function unspawn(c){
+  if(!c.nextId) return;
+  const n = state.cards.find(x=>x.id===c.nextId);
+  if(n && !n.done && nextSig(n)===c.nextSig) state.cards = state.cards.filter(x=>x!==n);
+  delete c.nextId; delete c.nextSig;
+}
 function dueAt(c){ // momento de la tarea (sin hora = 8:00 a.m. para recordatorios)
   if(!c.date) return null;
   const [y,m,d] = c.date.split('-').map(Number);
@@ -588,6 +632,7 @@ function cardHTML(c){
   const meta = [];
   if(c.subject) meta.push(`<span class="chip" style="background:${subjectColor(c.subject)}22;color:inherit">${esc(c.subject)}</span>`);
   if(c.date) meta.push(`<span class="chip ${dueClass(c)}">${dueClass(c)==='late'?'Vencida · ':''}${esc(fmtDue(c))}</span>`);
+  if(c.repeat && REPEAT[c.repeat] && !c.done) meta.push(`<span class="chip rep" title="Se repite ${REPEAT_LONG[c.repeat]}${c.repUntil?' hasta el '+esc(c.repUntil):''}">🔁 ${REPEAT[c.repeat]}</span>`);
   { const rs = remsOf(c); if(rs.length && c.date && !c.done) meta.push(`<span title="Recordatorios: ${esc(rs.map(remText).join(', '))}">🔔${rs.length>1?'<b style="font-size:11px">'+rs.length+'</b>':''}</span>`); }
   if(total) meta.push(`<span>☑ ${done}/${total}</span>`);
   if(c.desc) meta.push('<span title="Tiene notas">📝</span>');
@@ -656,16 +701,16 @@ function updateBanner(){
 /* ---------- Acciones de tarjetas ---------- */
 function setDone(c, done){
   c.done = done;
-  if(done){ c.prevCol = c.col !== doneCol().id ? c.col : (c.prevCol||firstCol().id); c.col = doneCol().id; c.completedAt = Date.now(); }
-  else { c.col = c.prevCol && colById(c.prevCol) && !colById(c.prevCol).done ? c.prevCol : firstCol().id; }
+  if(done){ c.prevCol = c.col !== doneCol().id ? c.col : (c.prevCol||firstCol().id); c.col = doneCol().id; c.completedAt = Date.now(); spawnNext(c); }
+  else { c.col = c.prevCol && colById(c.prevCol) && !colById(c.prevCol).done ? c.prevCol : firstCol().id; unspawn(c); }
   c.order = maxOrder(c.col)+1;
 }
 function maxOrder(col){ return state.cards.filter(c=>c.col===col).reduce((m,c)=>Math.max(m,c.order??0),0); }
 function moveCard(c, colId, index){
   const col = colById(colId); if(!col) return;
   const wasDone = c.done;
-  if(col.done && !c.done){ c.prevCol = c.col; c.done = true; c.completedAt = Date.now(); }
-  if(!col.done && c.done){ c.done = false; }
+  if(col.done && !c.done){ c.prevCol = c.col; c.done = true; c.completedAt = Date.now(); spawnNext(c); }
+  if(!col.done && c.done){ c.done = false; unspawn(c); }
   c.col = colId;
   const others = state.cards.filter(x=>x.col===colId && x!==c).sort((a,b)=>(a.order??0)-(b.order??0));
   others.splice(Math.max(0,Math.min(index,others.length)),0,c);
@@ -796,6 +841,9 @@ function openEditor(id, colId){
   $('#cSubject').value = c ? (c.subject||'') : ($('#fSubject').value||'');
   $('#cDate').value = c ? (c.date||'') : '';
   $('#cTime').value = c ? (c.time||'') : '';
+  $('#cRepeat').value = c && REPEAT[c.repeat] ? c.repeat : '';
+  $('#cUntil').value = c ? (c.repUntil||'') : '';
+  $('#cUntilF').hidden = !$('#cRepeat').value;
   draftRems = c ? remsOf(c) : ['1440'];
   renderRems();
   $('#cDesc').value = c ? (c.desc||'') : '';
@@ -808,6 +856,10 @@ function openEditor(id, colId){
   if(!c) setTimeout(()=>$('#cTitle').focus(), 50);
 }
 let draftRems = [];
+$('#cRepeat').addEventListener('change', ()=>{
+  $('#cUntilF').hidden = !$('#cRepeat').value;
+  if($('#cRepeat').value && !$('#cDate').value){ $('#cDate').value = todayStr(); toast('Se repetirá a partir de hoy: puedes cambiar la fecha'); }
+});
 function renderRems(){
   const box = $('#cRems');
   box.innerHTML = draftRems.length ? draftRems.map((v,i)=>`<div class="rem-row" data-i="${i}"><span class="rem-ico">🔔</span>
@@ -845,6 +897,7 @@ function readEditor(){
     subject: $('#cSubject').value.trim(),
     date: $('#cDate').value, time: $('#cTime').value,
     reminders: [...new Set(draftRems)].slice(0, MAX_REMS), desc: $('#cDesc').value.trim(),
+    repeat: $('#cRepeat').value, repUntil: $('#cRepeat').value ? $('#cUntil').value : '',
     col: $('#cCol').value,
     checklist: draftChecklist.filter(i=>i.text.trim())
   };
@@ -852,12 +905,16 @@ function readEditor(){
 $('#cSave').onclick = ()=>{
   const v = readEditor();
   if(!v.title){ toast('Escribe el nombre de la tarea'); $('#cTitle').focus(); return; }
+  if(v.repeat && !v.date){ toast('Elige la fecha de la primera vez para repetir la tarea'); $('#cDate').focus(); return; }
+  if(v.repeat && v.repUntil && v.repUntil < v.date){ toast('La fecha «Hasta» debe ser posterior a la fecha de la tarea'); $('#cUntil').focus(); return; }
   let c = editing;
   if(!c){ c = {id:uid(), created:Date.now(), done:false}; state.cards.push(c); c.col = null; }
   const changedTiming = c.date!==v.date || c.time!==v.time || JSON.stringify(remsOf(c))!==JSON.stringify(remsOf({reminders:v.reminders}));
   const targetCol = v.col;
   const rs = remsOf({reminders:v.reminders});
   Object.assign(c, {title:v.title, subject:v.subject, date:v.date, time:v.time, reminders:rs, remind:rs[0]||'', desc:v.desc, checklist:v.checklist});
+  if(v.repeat){ if(c.repeat!==v.repeat || !c.repDay || changedTiming) c.repDay = +v.date.slice(8,10); c.repeat = v.repeat; c.repUntil = v.repUntil; }
+  else { delete c.repeat; delete c.repDay; delete c.repUntil; }
   if(changedTiming) c.notified = {};
   if(c.col !== targetCol) moveCard(c, targetCol, 1e9);
   autoWeek();
@@ -886,6 +943,7 @@ function details(c){
   const lines=[];
   if(c.subject) lines.push('Asunto / Tema / Curso: '+c.subject);
   if(c.desc) lines.push(c.desc);
+  if(c.repeat && REPEAT_LONG[c.repeat]) lines.push('Se repite '+REPEAT_LONG[c.repeat]+(c.repUntil?' hasta el '+c.repUntil:''));
   if(c.checklist && c.checklist.length) lines.push('Checklist:\n'+c.checklist.map(i=>(i.done?'✔ ':'☐ ')+i.text).join('\n'));
   lines.push('— Mi Tablero');
   return lines.join('\n\n');
@@ -899,7 +957,14 @@ function gcalUrl(c){
     + '&text='+encodeURIComponent(title)
     + '&dates='+dates
     + '&details='+encodeURIComponent(details(c))
+    + (rruleOf(c) ? '&recur='+encodeURIComponent('RRULE:'+rruleOf(c)) : '')
     + '&ctz='+encodeURIComponent(TZ);
+}
+function rruleOf(c){
+  if(!c.repeat || !RRULE[c.repeat] || !c.date) return '';
+  let r = RRULE[c.repeat];
+  if(c.repUntil) r += ';UNTIL=' + (c.time ? utcStamp(new Date(+c.repUntil.slice(0,4), +c.repUntil.slice(5,7)-1, +c.repUntil.slice(8,10), 23, 59, 59)) : ymd(c.repUntil));
+  return r;
 }
 function icsEsc(s){ return String(s).replace(/\\/g,'\\\\').replace(/\n/g,'\\n').replace(/,/g,'\\,').replace(/;/g,'\\;'); }
 function fold(line){ const out=[]; while(line.length>73){ out.push(line.slice(0,73)); line=' '+line.slice(73); } out.push(line); return out.join('\r\n'); }
@@ -908,9 +973,10 @@ function buildIcs(cards){
   const now = utcStamp(new Date());
   for(const c of cards){
     if(!c.date) continue;
-    L.push('BEGIN:VEVENT','UID:'+c.id+'@mi-tablero','DTSTAMP:'+now);
+    L.push('BEGIN:VEVENT','UID:'+(c.series||c.id)+'@mi-tablero','DTSTAMP:'+now);
     if(c.time){ const s=dueAt(c); L.push('DTSTART:'+utcStamp(s),'DTEND:'+utcStamp(new Date(s.getTime()+3600000))); }
     else L.push('DTSTART;VALUE=DATE:'+ymd(c.date),'DTEND;VALUE=DATE:'+ymd(addDays(c.date,1)));
+    if(rruleOf(c)) L.push('RRULE:'+rruleOf(c));
     L.push(fold('SUMMARY:'+icsEsc((c.subject?'['+c.subject+'] ':'')+c.title)));
     L.push(fold('DESCRIPTION:'+icsEsc(details(c))));
     for(const r of remsOf(c)){
@@ -1899,7 +1965,7 @@ setInterval(liveCheck, LIVE_MS);
 setInterval(()=>{ if(!locked) checkReminders(); }, 30000);
 setInterval(()=>{ if(!locked && !drag && !document.querySelector('.overlay.show')) render(); }, 5*60000);
 // Para pruebas
-window.__tablero = {get state(){return state;}, get boards(){return boards;}, mergeBoards, buildIcs, gcalUrl, mergeStates, migrate, targetColFor, showPreview, analyzeFile};
+window.__tablero = {get state(){return state;}, get boards(){return boards;}, mergeBoards, buildIcs, gcalUrl, nextDate, moveCard, doneCol, save, render, mergeStates, migrate, targetColFor, showPreview, analyzeFile};
 })();
 </script>
 </body>

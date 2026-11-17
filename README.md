@@ -46,6 +46,12 @@ App tipo Trello, ideal para el trabajo: organiza tus tareas, proyectos y cronogr
 - Si la nube se pone naranja, la sesión de Google expiró (pasa más o menos cada hora): tócala para reconectar.
 - Proyecto de Google Cloud: **Mi Tablero** (`mi-tablero-515000`). Solo las cuentas agregadas como *usuarios de prueba* (Google Auth Platform → Público) pueden conectarse.
 
+## Tareas que se repiten
+- En el editor de la tarea elige **Repetir**: cada semana, cada 15 días (quincenal), cada mes o cada año. Opcionalmente, **Hasta** qué fecha.
+- Al finalizar la tarea se crea sola la siguiente con su nueva fecha, en la columna que corresponde. Si la finalizas tarde, salta a la próxima fecha que aún no pasó. Si la desmarcas, la siguiente se quita.
+- Las mensuales respetan el día: una del 31 pasa al 30 o 28 en los meses cortos y vuelve al 31 cuando el mes lo tiene.
+- Al enviarla a Google Calendar o al .ics se agenda como evento repetitivo.
+
 ## Importante: recordatorios y datos
 - **Recordatorios garantizados:** usa Google Calendar. Sus alertas llegan aunque la app esté cerrada, sin internet y en todos tus dispositivos.
 - **Notificaciones de la app:** llegan cuando la app está abierta o en segundo plano. Los teléfonos no permiten que una app web avise estando totalmente cerrada sin un servidor de pago; por eso los recordatorios fuertes van a Google Calendar.
