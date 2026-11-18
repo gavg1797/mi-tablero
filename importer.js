@@ -4,7 +4,8 @@
 (function(){
 'use strict';
 const pad = n => String(n).padStart(2,'0');
-const LIBS = { xlsx:'lib/xlsx.full.min.js', mammoth:'lib/mammoth.browser.min.js', pdf:'lib/pdf.min.js' };
+const LIBS = { xlsx:'lib/xlsx-0.20.3.full.min.js', mammoth:'lib/mammoth.browser.min.js', pdf:'lib/pdfjs-4.10.38/cargar.js' };
+const MAX_ARCHIVO = 20 * 1048576; // 20 MB por archivo
 const loaded = {};
 function loadLib(k){
   return new Promise((res, rej)=>{
@@ -505,8 +506,8 @@ async function pdfGridRows(pdf){
 }
 async function readPdf(file, ctx){
   await loadLib('pdf');
-  pdfjsLib.GlobalWorkerOptions.workerSrc = 'lib/pdf.worker.min.js';
-  const pdf = await pdfjsLib.getDocument({data: new Uint8Array(await file.arrayBuffer())}).promise;
+  await window.cargarPdfjs();
+  const pdf = await pdfjsLib.getDocument({data: new Uint8Array(await file.arrayBuffer()), isEvalSupported: false}).promise;
   // 1) Si la tabla tiene bordes dibujados, se lee celda por celda
   try{
     const grid = await pdfGridRows(pdf);
@@ -563,6 +564,7 @@ async function readPdf(file, ctx){
 }
 async function readFile(file, ctx){
   ctx = ctx || {};
+  if(file.size > MAX_ARCHIVO) throw new Error('El archivo pesa más de 20 MB. Un cronograma suele pesar mucho menos: revisa que sea el archivo correcto.');
   const name = file.name.toLowerCase();
   if(/\.(xlsx|xlsm|xls|ods|csv|tsv)$/.test(name)) return readSpreadsheet(file, ctx);
   if(/\.docx$/.test(name)) return readDocx(file, ctx);
